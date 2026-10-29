@@ -1,0 +1,35 @@
+node_modules
+dist
+
+# Your colony: which repo sits on which plot, and what you archived. Holds the names and
+# paths of the repos you work in, so it stays out of the repository.
+data/*.json
+data/*.tmp
+# The retry supervisor's decision log, which names the repos your sessions run in.
+data/*.jsonl
+# The search index: what every chat said, which is nobody's to publish.
+data/*.db
+data/*.db-*
+
+# Per-machine Claude Code permissions — personal paths live in here.
+.claude/settings.local.json
+
+.DS_Store
+*.log
+
+# Local capture output — not part of the project.
+recordings
+
+# Scratch: one-off scripts and their output, written by a session while it works. Inside the
+# checkout so writing one needs no approval, which a file under /tmp does (infra.md).
+/temp/
+
+# Yarn 4 (node-modules linker, no zero-installs): keep the lockfile and any release/plugin
+# files, drop the per-machine install state.
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

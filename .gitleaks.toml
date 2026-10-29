@@ -1,0 +1,5 @@
+# Gitleaks runs over the tree before every export and on every push (.github/workflows/gitleaks.yml). The default rules,
+# with nothing allowed yet: a finding is read, and either the fixture is reworded at source or
+# a narrow allowlist entry is added here with the reason.
+[extend]
+useDefault = true

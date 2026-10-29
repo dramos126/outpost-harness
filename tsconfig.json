@@ -1,0 +1,23 @@
+{
+  // Type-checking without a migration. Existing JavaScript is included so tsc parses it — a
+  // syntax error is still a failure — but not checked (checkJs: false). A file opts in with a
+  // leading `// @ts-check`, one at a time, as its area is touched; new files are written as
+  // .ts and are checked in full. See docs/process/infra.md for the rules on server-side .ts.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "types": ["node"]
+  },
+  "include": ["src", "server", "tools", "scripts", "vite.config.js"],
+  "exclude": ["node_modules", "dist", "public"]
+}

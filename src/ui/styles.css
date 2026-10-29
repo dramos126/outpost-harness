@@ -1,0 +1,9391 @@
+/* Outpost — the chat page.
+   Dark first. Every colour is a token on :root, and a preset is the same tokens with other
+   values under `data-preset`, never a second stylesheet. Shapes follow the system: hairline
+   separators, a soft rounded fill for the selected row, filled pills for the one primary
+   action, text buttons for the rest. */
+
+/* Graphite, the default preset: these values are `:root`'s, and also any element carrying
+   `data-preset='graphite'` (a preset card's thumbnail in Settings). */
+:root,
+[data-preset='graphite'] {
+  /* The browser draws form controls, scrollbars and a native select's popup from this. */
+  color-scheme: dark;
+  /* The gap under a bar at the screen's foot. The full home-indicator inset (34 px) plus our
+     own padding read as dead space on an iPhone; the indicator needs only the last ~20 px. */
+  --foot-pad: max(10px, calc(env(safe-area-inset-bottom) - 14px));
+  --bg: #121214;
+  --side: #1c1c1e;
+  --raised: #2c2c2e;
+  /* A surface set into the sidebar: darker than `--side`. The dark presets' page is, so it is
+     the page's colour; paper's page is white, lighter than its sidebar, and sets its own. */
+  --sunken: var(--bg);
+  --fill: rgba(120, 120, 128, 0.18);
+  --fill-strong: rgba(120, 120, 128, 0.3);
+  --sep: rgba(84, 84, 88, 0.55);
+  --text: #f5f5f7;
+  --text2: #98989d;
+  --text3: #636366;
+  /* "Active": a working dot, the primary button, the chosen row. A person may change it
+     (`applyTheme` sets it inline), so nothing that means needs-you or healthy is drawn in it. */
+  --accent: #14b8a6;
+  /* Text on a filled accent. `applyTheme` derives it from a chosen accent's luminance; teal is
+     pale enough that white on it fails contrast, so graphite's is the near-black. */
+  --accent-text: #121214;
+  /* The accent as a faint fill. Mixed here, not in JS, so it follows a custom accent. */
+  --accent-tint: color-mix(in srgb, var(--accent) 10%, transparent);
+  /* An informational blue (the `/registerRepo` card), not "active": it stays when the accent moves. */
+  --blue: #0a84ff;
+  --green: #30d158;
+  --orange: #ff9f0a;
+  /* Orange as small text. The system orange is a fill colour; on white it is too pale to read
+     at 11px, so the light schemes give the text a darker one. */
+  --orange-text: #ff9f0a;
+  --yellow: #ffd60a;
+  --red: #ff453a;
+  --grey: #8e8e93;
+  /* Dark text on a filled orange (the header's needs-you count), in every preset. */
+  --on-orange: #1c1c1e;
+  --code: rgba(255, 255, 255, 0.06);
+  /* Syntax in the Files code view (code-view.js). Mixed from the fixed palette toward the text,
+     so every preset gets readable ones from its own values and no preset block repeats them. A
+     code view is not status: these never stand for needs-you or healthy. */
+  --syn-keyword: color-mix(in srgb, var(--blue) 75%, var(--text));
+  --syn-string: color-mix(in srgb, var(--green) 70%, var(--text));
+  --syn-number: color-mix(in srgb, var(--orange) 75%, var(--text));
+  --syn-comment: var(--text3);
+  --syn-type: color-mix(in srgb, var(--yellow) 65%, var(--text));
+  --syn-def: color-mix(in srgb, var(--blue) 40%, var(--text));
+  --syn-prop: color-mix(in srgb, var(--red) 45%, var(--text));
+  --radius: 12px;
+  --radius-sm: 8px;
+  /* The log's column: the pane less its padding, capped here so a line of prose on a wide
+     window is not too long to follow back. The cap is the column's, not each message's, so
+     code, tables and pictures are as wide as the prose and the column is centred. Settings ›
+     Appearance's Reading width sets it inline (`applyTheme`): 760 px, this, or the pane. The
+     phone rule drops it: there the screen is narrower than this anyway. */
+  --measure: 960px;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  /* A raised segment and a switch's knob: small lifts that read the same on every preset. */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-knob: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --knob: #ffffff;
+  /* Behind a dialog, and the darker one behind a photo opened full screen. */
+  --scrim: rgba(0, 0, 0, 0.5);
+  --scrim-deep: rgba(0, 0, 0, 0.88);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --side-w: 300px;
+}
+
+/* Paper, the light preset. "Follow system" is the page choosing graphite or paper
+   (`applyTheme`), so this is the one place the light values live. */
+:root[data-preset='paper'],
+[data-preset='paper'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --side: #f5f5f7;
+  --raised: #ffffff;
+  --sunken: #e5e5ea;
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-strong: rgba(120, 120, 128, 0.22);
+  --sep: rgba(60, 60, 67, 0.22);
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --text3: #aeaeb2;
+  --accent: #007aff;
+  --accent-text: #ffffff;
+  --blue: #007aff;
+  --green: #34c759;
+  --orange: #ff9500;
+  --orange-text: #c45500;
+  --yellow: #ffcc00;
+  --red: #ff3b30;
+  --code: rgba(0, 0, 0, 0.05);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Midnight: cooler and darker than graphite. Status colours are graphite's. */
+:root[data-preset='midnight'],
+[data-preset='midnight'] {
+  --bg: #0b0d12;
+  --side: #11141b;
+  --raised: #1b1f29;
+  --fill: rgba(110, 120, 150, 0.16);
+  --fill-strong: rgba(110, 120, 150, 0.28);
+  --sep: rgba(72, 82, 108, 0.55);
+  --text: #e9edf5;
+  --text2: #8d95a8;
+  --text3: #5a6276;
+  --accent: #4d8dff;
+  --accent-text: #ffffff;
+  --code: rgba(160, 180, 255, 0.06);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Ember: a warm dark. The accent stays a blue: orange and amber mean needs-you. */
+:root[data-preset='ember'],
+[data-preset='ember'] {
+  --bg: #15110f;
+  --side: #1e1916;
+  --raised: #2c2521;
+  --fill: rgba(140, 120, 105, 0.18);
+  --fill-strong: rgba(140, 120, 105, 0.3);
+  --sep: rgba(100, 86, 76, 0.55);
+  --text: #f5efe8;
+  --text2: #a59b92;
+  --text3: #6c625a;
+  --accent: #3d9bff;
+  --accent-text: #ffffff;
+  --code: rgba(255, 230, 210, 0.06);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Saved to an iPhone's Home Screen, `100%` stopped short of the screen's foot by about the
+   home indicator, leaving a dead band under the usage panel. There is no browser chrome in a
+   home-screen app, so the large viewport is the whole screen. */
+@media (display-mode: standalone) {
+  html,
+  body,
+  #app {
+    height: 100vh;
+    height: 100lvh;
+  }
+}
+
+/* A phone's keyboard is up: the page ends at its top (`fitKeyboard` in shell.js), and the
+   foot's home-indicator padding is under the keyboard, so it goes. */
+html[data-kb],
+html[data-kb] body,
+html[data-kb] #app {
+  height: var(--kb-h);
+}
+
+html[data-kb] {
+  --foot-pad: 8px;
+}
+
+/* iOS zooms the page into any field it focuses whose text is under 16 px, and never zooms back
+   out, so every message typed left the chat to be pinched back. `!important` because each
+   field sets its own size at a heavier selector; `maximum-scale=1` would also stop the zoom
+   but takes pinch-to-zoom away on Android. */
+@media (pointer: coarse) and (hover: none) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* ── layout ────────────────────────────────────────────────────────────────────────── */
+
+.app {
+  display: grid;
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
+  height: 100%;
+  position: relative;
+}
+
+.side {
+  background: var(--side);
+  border-right: 1px solid var(--sep);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: env(safe-area-inset-top);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  background: var(--bg);
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text2);
+  user-select: none;
+}
+
+.empty[hidden],
+.settings-view[hidden] {
+  display: none;
+}
+
+.empty h2 {
+  margin: 8px 0 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* The mark (`MARK`, favicon.js): an O ring with a post through its top and a centre dot, on an
+   accent rounded square. Coloured here so it follows a changed accent; the same drawing is
+   public/icon.svg on the default accent. */
+.markart {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.markart .sq {
+  fill: var(--accent);
+}
+
+.markart .fg {
+  stroke: var(--accent-text);
+}
+
+.markart .dot {
+  fill: var(--accent-text);
+}
+
+.mark {
+  width: 56px;
+  height: 56px;
+}
+
+/* ── buttons ───────────────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, opacity 120ms ease;
+  user-select: none;
+}
+
+.btn:hover {
+  background: var(--fill-strong);
+}
+
+.btn:active {
+  opacity: 0.7;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn.primary:hover {
+  filter: brightness(1.08);
+  background: var(--accent);
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--accent);
+}
+
+.btn.ghost:hover {
+  background: var(--fill);
+}
+
+.btn.danger {
+  color: var(--red);
+}
+
+.btn.icon {
+  width: 32px;
+  padding: 0;
+}
+
+.btn.wide {
+  width: 100%;
+  height: 38px;
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/* Author rules set `display` on these, so the browser's own [hidden] loses to them. */
+.btn[hidden],
+.row[hidden],
+.opts[hidden],
+.actions[hidden] {
+  display: none;
+}
+
+/* ── sidebar ───────────────────────────────────────────────────────────────────────── */
+
+.side-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px 6px 16px;
+}
+
+/* The mark beside the wordmark, lower-case in the mono face. */
+.brand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.brand .logo {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.brand .need {
+  font-family: var(--font);
+}
+
+.brand .need {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--on-orange);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.brand .need[hidden] {
+  display: none;
+}
+
+/* Workspaces waiting on a decision (ui-settings.md *Workspaces*): a dot on the gear, as an app
+   icon's, and their count on Settings' Workspaces item. Red, since unseen they live forever. */
+#btn-settings {
+  position: relative;
+}
+
+.ws-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--red);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ws-badge + .chev {
+  margin-left: 8px;
+}
+
+#btn-settings .ws-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 9px;
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  margin: 0;
+}
+
+.ws-badge[hidden] {
+  display: none;
+}
+
+.side-head .btn.icon {
+  background: transparent;
+  color: var(--text2);
+}
+
+.side-head .btn.icon:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+/* Resize and collapse are for a desktop: at phone width the list and the chat are two screens.
+   The grip sits on the sidebar's right edge; collapsed, the sidebar is a rail of its own two
+   header buttons. */
+.side-grip {
+  display: none;
+}
+
+/* "Phone" is narrow *or* short. A phone on its side is 800-odd pixels wide and under 400
+   tall: wide enough for the two columns, and with them the list took a third of a screen that
+   had no height to spare and the conversation was a sliver. So every phone rule below reads
+   `(max-width: 760px), (max-height: 500px)`, and the wide-screen ones ask for the height too. */
+@media (min-width: 761px) and (min-height: 501px) {
+  .side-grip {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--side-w) - 3px);
+    width: 6px;
+    cursor: col-resize;
+    z-index: 30;
+    touch-action: none;
+  }
+
+  .side-grip:hover,
+  .side-grip:focus-visible,
+  .app.resizing .side-grip {
+    background: var(--accent);
+    opacity: 0.5;
+    outline: none;
+  }
+
+  .app.resizing {
+    user-select: none;
+    cursor: col-resize;
+  }
+
+  /* The rail keeps its own grid column. A button floating over `main` instead sat on top of
+     the conversation's title: `.convo` is absolutely placed and no padding on `main` moves it. */
+  .app[data-side='collapsed'] {
+    --side-w: 51px;
+  }
+
+  .app[data-side='collapsed'] .side > :not(.side-head),
+  .app[data-side='collapsed'] .brand,
+  .app[data-side='collapsed'] .side-grip {
+    display: none;
+  }
+
+  /* Reversed so the toggle stays on top, where the pointer already is, with the gear under it. */
+  .app[data-side='collapsed'] .side-head {
+    flex-direction: column-reverse;
+    padding: 14px 8px 6px;
+  }
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .side-toggle {
+    display: none;
+  }
+}
+
+/* Chats and Routines (routines.md *In the sidebar*): a segmented control under the header. The
+   tabs share the search, the width and the rail; what is only the chats' — the list, terminals,
+   what the index found, Archived, the bulk archive and Away — goes while Routines shows. */
+.side-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin: 2px 12px 4px;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--sunken);
+}
+
+/* The thumb: one element that slides under the chosen tab, lighter than the sidebar with a
+   real edge. On `--fill` the track and a `--raised` tab were nearly the same grey (the
+   owner's review, 2026-10-15). */
+.side-tabs::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 3px);
+  border: 1px solid var(--sep);
+  border-radius: 7px;
+  background: var(--raised);
+  box-shadow: var(--shadow-sm);
+  transition: transform 120ms ease;
+}
+
+.side[data-tab='routines'] .side-tabs::before {
+  transform: translateX(calc(100% + 2px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-tabs::before {
+    transition: none;
+  }
+}
+
+.side-tabs .tab svg,
+.side-tabs .tab .glyph {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.side-tabs .tab .glyph {
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.side-tabs .tab {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* The chosen tab by fill and weight, never the accent (2026-10-15 review): the two tabs are a
+   place, not a state, and the accent means active. */
+.side-tabs .tab.on {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Routines whose run came back as a chat and wants you, as the header's count is drawn. */
+/* "? N": the status marks' ask glyph (marks.js) and the count, amber, so the tab says what the
+   rows under it do. No pill: a filled orange pill around a ? disc was two badges in one. */
+.side-tabs .n {
+  --mark-ink: var(--bg);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--orange);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* After `.side-tabs .tab svg`, which would draw the glyph at the tab icon's 14 px. */
+.side-tabs .n svg {
+  width: 12px;
+  height: 12px;
+}
+
+.side-tabs .n[hidden] {
+  display: none;
+}
+
+.side[data-tab='routines'] .found,
+.side[data-tab='routines'] .archived-link,
+.side[data-tab='routines'] .picking,
+.side[data-tab='routines'] #btn-bulk {
+  display: none;
+}
+
+/* Search, New and the bulk archive on one row: a full-width New chat button was the widest
+   thing in the sidebar for one tap. */
+.side-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 10px;
+}
+
+.side-tools .btn {
+  flex: none;
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: var(--fill);
+  color: var(--text2);
+}
+
+.search svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13.5px;
+  outline: none;
+}
+
+.search input::placeholder {
+  color: var(--text3);
+}
+
+.search input::-webkit-search-cancel-button,
+.ffilter .input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* The clear button after a search box (`clearable`): shown only once there is text. Our own,
+   not the browser's, because Firefox draws none and the phones' are too small to hit. */
+.clear-search {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+}
+
+.clear-search:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.clear-search svg {
+  width: 12px;
+  height: 12px;
+}
+
+input:placeholder-shown + .clear-search {
+  display: none;
+}
+
+/* ── the chat list ─────────────────────────────────────────────────────────────────── */
+
+.chats,
+.routines {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+  overscroll-behavior: contain;
+}
+
+.chats[hidden],
+.routines[hidden] {
+  display: none;
+}
+
+.routines .sec,
+.chats .sec {
+  padding: 12px 10px 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+.routines .nothing,
+.chats .nothing {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 13px;
+}
+
+.chat {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat:hover {
+  background: var(--fill);
+}
+
+.chat[aria-pressed='true'] {
+  background: var(--fill-strong);
+}
+
+.chat .dot,
+.dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--grey);
+}
+
+.chat .text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The left column (chat-list.js `lead`): the agent's mark over the shell's slot, 12 px each, the
+   mark beside the first line and the slot beside the second, on every row so the column never
+   moves a title or changes a row's height. The shell slot is a terminal while background
+   commands run (`bgMark`), grey, not a warning: a dev server is meant to be there; this is
+   where to look when the machine is busy. Empty otherwise. */
+.chat .lead {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 12px;
+  padding-top: 4px;
+}
+
+.chat .lead i.mark {
+  margin-top: 0;
+}
+
+.chat .bg-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  color: var(--text2);
+}
+
+.chat .bg-mark svg {
+  width: 12px;
+  height: 12px;
+}
+
+.chat .bg-mark b {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chat .t {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Where, on what, doing what (chat-list.js): repo and branch as chips, then the model and the
+   status words. Wraps rather than clipping, so the branch survives the 220 px sidebar. */
+.chat .s {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 5px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.chat .s[hidden] {
+  display: none;
+}
+
+.chat .s > span {
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat .s .chip {
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--fill);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 16px;
+}
+
+/* What a chat that needs you is asking, in its words: two lines at most. */
+.chat .q {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.chat .q[hidden] {
+  display: none;
+}
+
+/* A permission's head is a tool and its command: mono, as the permission bar shows it. */
+.chat .q.perm {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+/* Needs you: its own section at the top (chats.md), the heading and each row's edge in amber. */
+.chats .sec.needs,
+.routines .sec.needs {
+  color: var(--orange-text);
+}
+
+/* A chat a routine's run became: the routine's name first, in the accent (routines.md). */
+.chat .s .chip.r {
+  color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.chat .s .sep {
+  color: var(--text3);
+}
+
+/* A paused routine: faded, its dot a ring. */
+.chat.routine.paused {
+  opacity: 0.55;
+}
+
+.chat.routine.paused .dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--grey);
+}
+
+/* The ring sits in the mark's slot (routines.js `routineMark`), where `i.mark .dot` is otherwise
+   only the spinner's reduced-motion stand-in and hidden. */
+i.mark.m-ring .dot {
+  display: block;
+}
+
+.chat.needs {
+  box-shadow: inset 2px 0 0 var(--orange);
+}
+
+.chat .when {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--text3);
+  padding-top: 2px;
+}
+
+/* The time and, under it, the pin (aging.md). `stamp`, never `side`: that is the sidebar's
+   bare class, and it gave every row's corner the sidebar's background and right border. */
+.chat .stamp {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+/* Always an outline; filled in the accent when pinned. */
+.chat .pin {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 5px;
+  color: var(--text3);
+}
+
+.chat .pin svg {
+  width: 14px;
+  height: 14px;
+  /* A slight overshoot, so pinning reads as the pin pressed in. Played only on a click: the
+     list's rebuild draws a pin already in place (chat-list.js). */
+  transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chat .pin:hover {
+  background: var(--fill-strong);
+  color: var(--text);
+}
+
+.chat .pin.on {
+  color: var(--accent);
+}
+
+/* Pinned lies on its side, the needle into the row: pinned reads at a glance, not only by colour. */
+.chat .pin.on svg {
+  fill: currentColor;
+  transform: rotate(90deg);
+}
+
+/* Status → colour. The same five words everywhere: hooks, server, list, header. */
+.working .dot,
+.working.dot {
+  background: var(--accent);
+}
+
+.waiting .dot,
+.waiting.dot {
+  background: var(--orange);
+}
+
+.blocked .dot,
+.blocked.dot {
+  background: var(--red);
+}
+
+.stalled .dot,
+.stalled.dot {
+  background: var(--yellow);
+}
+
+.done .dot,
+.celebrating .dot,
+.done.dot,
+.celebrating.dot {
+  background: var(--green);
+}
+
+.sleeping .dot,
+.sleeping.dot {
+  background: var(--text3);
+}
+
+.chat.waiting .s .w,
+.chat.blocked .s .w {
+  color: var(--text);
+}
+
+.chat.sleeping {
+  opacity: 0.7;
+}
+
+.chat.archived {
+  cursor: default;
+}
+
+.chat.archived {
+  align-items: center;
+}
+
+.chat.archived:hover {
+  background: transparent;
+}
+
+.chat.archived .btn {
+  flex: none;
+}
+
+/* Status marks (marks.js): a 12 px slot, empty for idle, dormant and asleep so titles align.
+   An `i`, never the bare class: `.mark` is also the logo's 56 px box (boot, shell). The glyph takes the status colour; `--mark-ink` is the sign knocked out of a filled disc. */
+i.mark {
+  --mark-ink: var(--bg);
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+}
+
+i.mark svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* `.chat i.mark` too: `.chat .spin`, later in the file, would draw it at 14 px. */
+i.mark .spin,
+.chat i.mark .spin {
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  border-width: 1.75px;
+}
+
+i.mark .dot {
+  display: none;
+  margin: 0;
+  background: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  i.mark .spin {
+    display: none;
+  }
+
+  i.mark .dot {
+    display: block;
+  }
+}
+
+i.mark.waiting {
+  color: var(--orange);
+}
+
+i.mark.blocked {
+  color: var(--red);
+}
+
+i.mark.stalled {
+  color: var(--yellow);
+}
+
+i.mark.done {
+  color: var(--green);
+}
+
+/* A hairline between the chat list's rows, in the column dividers' `--sep`, the row's full
+   width, so it sits as far off the list's edge on the left as on the right — inset to the
+   title it stopped short on the left only, and lopsided. Drawn by the lower row, so only
+   between two rows: a section's heading breaks the `+`, and its last row has none. A filled
+   row — hover, open, picked — hides the line above and below it, so it reads as one card. */
+.chats .chat {
+  position: relative;
+}
+
+/* As much room under the chips as over the title: the title's 20 px line leaves 3 px over its
+   text, the chips' 16 px in an 18 px line only 1 px under theirs, so the bottom pads 2 px more. */
+.chats .chat:not(.archived) {
+  padding-bottom: 11px;
+}
+
+.chats .chat + .chat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--sep);
+  pointer-events: none;
+}
+
+.chats .chat:hover::before,
+.chats .chat:hover + .chat::before,
+.chats .chat[aria-pressed='true']::before,
+.chats .chat[aria-pressed='true'] + .chat::before,
+.chats .chat[data-pick='true']::before,
+.chats .chat[data-pick='true'] + .chat::before {
+  display: none;
+}
+
+/* The chat list's rows are two lines high, whatever they hold, and a third only for a question
+   (chat-list.js): title and the status beside the time, then where. The rules hang off `.chats`
+   so the routines list, which shares `.chat`, keeps its own shape until it takes this one. */
+.chats .chat .text {
+  display: flex;
+  flex-direction: column;
+}
+
+.chats .chat .l1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+}
+
+.chats .chat .t {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 20px;
+}
+
+/* The status words give way before the time does, and never take more than the title's share.
+   `trail`, never `right`: that is the right column's bare class, and it stacked this slot. */
+.chats .chat .trail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 60%;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.chats .chat .trail .w {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text2);
+}
+
+.chats .chat.waiting .trail .w,
+.chats .chat.blocked .trail .w {
+  color: var(--text);
+}
+
+.chats .chat .trail .sep,
+.chats .chat .trail .age {
+  flex: none;
+}
+
+.chats .chat .trail .when {
+  padding-top: 0;
+}
+
+.chats .chat .s {
+  flex-wrap: nowrap;
+  height: 18px;
+  margin-top: 2px;
+  overflow: hidden;
+}
+
+.chats .chat .s .chip.r {
+  flex: 0 1 auto;
+  max-width: 60%;
+}
+
+/* The first repo gives way to its ellipsis; "+N" never does. */
+.chats .chat .where {
+  display: flex;
+  gap: 4px;
+}
+
+.chats .chat .where .chip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chats .chat .where .more {
+  flex: none;
+}
+
+/* Unpushed half an hour: an amber line on the grey, inset so the row's height and the clipped
+   line under it never move. Never amber fill, which is Needs you's. */
+.chats .chat .where .chip.unpushed {
+  box-shadow: inset 0 0 0 1px var(--orange);
+}
+
+.chats .chat .s .pin {
+  flex: none;
+  margin-left: auto;
+}
+
+.chat .spin {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  border-radius: 50%;
+  border: 2px solid var(--fill-strong);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.side-foot {
+  border-top: 1px solid var(--sep);
+  padding: 8px 12px var(--foot-pad);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.archived-link {
+  flex: none;
+  margin: 4px 12px 8px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 12.5px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.archived-link:hover,
+.archived-link[aria-pressed='true'] {
+  color: var(--text);
+}
+
+.archived-link[hidden] {
+  display: none;
+}
+
+/* First in the footer: the footer's rule is above it, its own rule parts it from the plan. */
+.sys {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0 8px;
+  border-bottom: 1px solid var(--sep);
+  /* The footer is a glance, not a reading: a size under the list's second line. */
+  font-size: 11px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sys[hidden] {
+  display: none;
+}
+
+.sys-i {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The bars take what the row leaves, so the line fits the narrowest sidebar without wrapping. */
+.sys-bar {
+  flex: 1;
+  min-width: 8px;
+  max-width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.sys-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+
+.sys-i.warn .sys-bar > i {
+  background: var(--orange);
+}
+
+.sys-i.hot .sys-bar > i {
+  background: var(--red);
+}
+
+.sys-p {
+  min-width: 3ch;
+  text-align: right;
+  color: var(--text);
+}
+
+/* The way into the machine's window: small, so the line still fits the narrowest sidebar. */
+.sys-more {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin: -2px -4px -2px -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+}
+
+.sys-more:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.sys-more svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ── the machine's window, behind the line's arrow ── */
+
+/* Wider than the other sheets: four tiles across, each with a figure, a sparkline and a row
+   of core blocks, were cramped at 728 px on a box with eight cores (2026-10-14). */
+.sysdetail .sheet {
+  width: min(880px, 100%);
+}
+
+.sysdetail header .sub {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sysdetail .sd-head {
+  gap: 10px;
+  min-width: 0;
+}
+
+/* The one thing worth knowing; absent when nothing is wrong. */
+.sysdetail .sd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--orange-text);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
+
+.sysdetail .sd-pill.hot {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+}
+
+.sysdetail .sd-pill::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sysdetail .sd-pill[hidden] {
+  display: none;
+}
+
+.sysdetail section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sysdetail h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sysdetail .sd-note {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.sysdetail .sys-bar {
+  max-width: none;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.sysdetail .warn.sys-bar > i {
+  background: var(--orange);
+}
+
+.sysdetail .hot.sys-bar > i {
+  background: var(--red);
+}
+
+/* Four tiles, two by two on a phone. Only a tile in trouble carries colour, so colour means something. */
+.sysdetail .sd-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.sysdetail .sd-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+}
+
+.sysdetail .sd-tile.warn {
+  border-color: var(--orange);
+}
+
+.sysdetail .sd-tile.hot {
+  border-color: var(--red);
+}
+
+.sysdetail .sd-k {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.sysdetail .sd-v {
+  font-family: var(--mono);
+  font-size: 24px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.sysdetail .warn .sd-v {
+  color: var(--orange-text);
+}
+
+.sysdetail .hot .sd-v {
+  color: var(--red);
+}
+
+.sysdetail .sd-v small {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.sysdetail .sd-spark {
+  display: block;
+  width: 100%;
+  height: 24px;
+  overflow: visible;
+}
+
+.sysdetail .sd-spark polyline {
+  fill: none;
+  stroke: var(--text3);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.sysdetail .warn .sd-spark polyline {
+  stroke: var(--orange);
+}
+
+.sysdetail .hot .sd-spark polyline {
+  stroke: var(--red);
+}
+
+.sysdetail .sd-f {
+  margin-top: auto;
+  font-size: 11.5px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The blocks across the tile, the figures under them: side by side, eight cores ran the
+   figures into the next tile. */
+.sysdetail .sd-cpu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+/* A tiny block per core, filled from its foot: neutral, orange or red only for a core in trouble.
+   The blocks share the tile's width, so four are wide and eight narrow. */
+.sysdetail .sd-blocks {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.sysdetail .sd-core {
+  display: flex;
+  align-items: flex-end;
+  flex: 1 1 0;
+  min-width: 4px;
+  max-width: 18px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--fill-strong);
+  overflow: hidden;
+}
+
+.sysdetail .sd-core > i {
+  display: block;
+  width: 100%;
+  min-height: 1px;
+  background: var(--text3);
+}
+
+.sysdetail .sd-core.warn > i {
+  background: var(--orange);
+}
+
+.sysdetail .sd-core.hot > i {
+  background: var(--red);
+}
+
+.sysdetail .sd-per {
+  font-family: var(--mono);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Memory as one bar: used, then cache, then free. */
+.sysdetail .sd-stack {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--fill-strong);
+}
+
+.sysdetail .sd-tile .sd-stack {
+  margin-top: auto;
+}
+
+.sysdetail .sd-stack .u,
+.sysdetail .sd-legend .u {
+  background: var(--green);
+}
+
+.sysdetail .sd-stack .c,
+.sysdetail .sd-legend .c {
+  background: color-mix(in srgb, var(--green) 30%, var(--fill-strong));
+}
+
+.sysdetail .sd-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+.sysdetail .sd-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border-radius: 2px;
+  background: var(--fill-strong);
+}
+
+/* Disks as a table. The mount column takes a share, not its text's width, so every bar is one length. */
+.sysdetail .sd-disks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) 4ch max-content max-content;
+  align-items: center;
+  gap: 10px 14px;
+  font-size: 12.5px;
+}
+
+.sysdetail .sd-disks > span:nth-child(-n + 4) {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sep);
+  color: var(--text2);
+}
+
+.sysdetail .sd-disks .sd-used {
+  grid-column: span 2;
+}
+
+.sysdetail .sd-mount {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sysdetail .sd-num {
+  font-family: var(--mono);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sysdetail .sd-disks > span.sd-num:nth-child(-n + 4) {
+  font-family: inherit;
+}
+
+.sysdetail .sd-num.dim {
+  color: var(--text2);
+}
+
+.side-foot .link {
+  font-size: 11.5px;
+  color: var(--orange);
+}
+
+.side-foot .link[hidden] {
+  display: none;
+}
+
+/* The version line: the short hash in mono, faint. On a deploy a dot leads it, `→ <new hash>`
+   follows, and the reload sits at its end as the app's own ghost button. It is the button's
+   height in both states, so the usage card above never moves when the reload comes. */
+.side-foot .ver {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  opacity: 0.7;
+}
+
+.side-foot .ver.stale {
+  opacity: 1;
+}
+
+/* "build" before the hash, fainter still and in the UI face, so the hash reads as a footer mark. */
+.side-foot .ver-label {
+  font-family: var(--font);
+  opacity: 0.7;
+}
+
+.side-foot .ver-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+.side-foot .ver-dot[hidden],
+.side-foot .ver-next[hidden],
+.side-foot .ver-reload[hidden] {
+  display: none;
+}
+
+.side-foot .ver-next {
+  color: var(--text);
+}
+
+.side-foot .ver-reload {
+  height: 22px;
+  margin-left: auto;
+  padding: 0 8px;
+  font-family: var(--font);
+  font-size: 11px;
+}
+
+/* ── usage ─────────────────────────────────────────────────────────────────────────── */
+
+.usage {
+  position: relative;
+}
+
+.usage[hidden] {
+  display: none;
+}
+
+.usage .panel {
+  position: relative;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--raised);
+  border: 1px solid var(--sep);
+}
+
+.usage .u-loading {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.usage.loading .u-loading {
+  display: flex;
+}
+
+/* Hidden, not removed: the placeholders hold the loaded height (usage.js). */
+.usage.loading .rows,
+.usage.loading .head {
+  visibility: hidden;
+}
+
+.usage .spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--fill-strong);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+}
+
+.u-row + .u-row {
+  margin-top: 8px;
+}
+
+.u-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.u-row.active .u-label {
+  font-weight: 600;
+}
+
+.u-pct {
+  font-variant-numeric: tabular-nums;
+}
+
+.u-bar {
+  height: 4px;
+  margin: 4px 0 3px;
+  border-radius: 2px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.u-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+
+.u-row.warn .u-bar > i {
+  background: var(--orange);
+}
+
+.u-row.hot .u-bar > i {
+  background: var(--red);
+}
+
+.u-reset,
+.u-empty,
+.u-fresh {
+  font-size: 10.5px;
+  color: var(--text2);
+}
+
+.usage .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.u-plan {
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* The phone's folded card (usage.js): the machine's line in shape, so the footer reads as two
+   alike lines; the chevron turns down when the card is open under it. */
+.u-line {
+  display: none;
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .u-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 0 0 8px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 11px;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .u-name {
+    flex: none;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .u-chev {
+    flex: none;
+    display: inline-flex;
+    transition: transform 150ms;
+  }
+
+  .u-chev svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .usage.open .u-chev {
+    transform: rotate(90deg);
+  }
+
+  .usage:not(.open) .panel {
+    display: none;
+  }
+}
+
+/* ── the conversation ──────────────────────────────────────────────────────────────── */
+
+.convo {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.convo.on {
+  display: flex;
+}
+
+.convo header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 8px 10px;
+  border-bottom: 1px solid var(--sep);
+  flex: none;
+  background: var(--bg);
+}
+
+.convo header .back {
+  display: none;
+  background: transparent;
+  color: var(--accent);
+}
+
+.convo header .text {
+  flex: 1;
+  min-width: 0;
+}
+
+.convo header .title {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+  border-radius: 4px;
+}
+
+/* The title is the rename field (conversation.js `startRename`); this is how it says so. */
+.convo header .title.editing {
+  text-overflow: clip;
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A routine's defining chat (conversation.js `paintHeader`): what to say, one line under its
+   heading, and a heading that is not a rename field. */
+.convo header .defines {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.convo header .defines[hidden] {
+  display: none;
+}
+
+.convo header .title.fixed {
+  cursor: default;
+}
+
+.convo header .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--text2);
+}
+
+.convo header .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--fill);
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The id pill is a button: it copies. Reset to the tag's look, and no
+   `display` of their own, so `[hidden]` needs no guard here. */
+.convo header button.tag {
+  border: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.convo header button.tag:hover {
+  background: var(--fill-strong);
+}
+
+.convo header .tag.id {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* The cold cache (conversation.js `coldPill`) in the context's orange band, tinted rather
+   than filled so it reads as a gauge and not as a failure. A chat with no hooks wears the same
+   orange: a status that may be wrong, not a failure. */
+.convo header .tag.cold.warn,
+.convo header .tag.nohooks {
+  color: var(--orange-text);
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+}
+
+.convo header .tag.cold {
+  color: var(--text3);
+}
+
+.convo header .tag.fail {
+  color: var(--red);
+}
+
+.convo header .tag.fail.transient {
+  color: var(--yellow);
+}
+
+.convo header .tag.retry {
+  color: var(--yellow);
+}
+
+.convo header .tag.retry.spent {
+  color: var(--text2);
+}
+
+/* The context (conversation.js `paintContext`): a bar under the title, its count in mono
+   beside it, Compact docked at the end. Accent below the thresholds, orange and red in their
+   bands. The gauge is the Workspace section's door, so it is a button reset to plain. */
+/* One row under the title: the context bar and Compact on the left, the actions on the right,
+   as wide as the log's column and centred with it — the bar is read against the messages it
+   prices, so it shares their edges. Two rows here were a header a row too tall (2026-10-14). */
+.convo .toolrow {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px max(24px, calc((100% - var(--measure)) / 2));
+  border-bottom: 1px solid var(--sep);
+}
+
+/* The tool row's popover (conversation.js `openPop`): a question anchored under the buttons that
+   raised it — Hand off's path, Archive's confirm — at the column's right edge, over the log, not
+   a modal. The Stop popover's shape: a head, a sentence, Cancel and the verb last. */
+.convo .tpop {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: max(24px, calc((100% - var(--measure)) / 2));
+  z-index: 6;
+  width: min(380px, calc(100% - 24px));
+  padding: 10px 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.convo .tpop[hidden] {
+  display: none;
+}
+
+.convo .tpop .head {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.convo .tpop .why {
+  margin-bottom: 8px;
+  color: var(--text2);
+}
+
+/* The switch to the other way, a link rather than a third button. */
+.convo .tpop .alt {
+  display: block;
+  margin: -2px 0 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--accent);
+  cursor: pointer;
+  text-align: left;
+}
+
+.convo .tpop .alt:hover {
+  text-decoration: underline;
+}
+
+.convo .tpop .row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.convo .ctxbar {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.convo .ctxbar[hidden] {
+  display: none;
+}
+
+.convo .ctxbar .gauge {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text2);
+  font: inherit;
+  text-align: left;
+}
+
+.convo .ctxbar button.gauge {
+  cursor: pointer;
+}
+
+.convo .ctxbar button.gauge:hover .n {
+  color: var(--text);
+}
+
+.convo .ctxbar .track {
+  flex: 1;
+  min-width: 24px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.convo .ctxbar .track > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 400ms ease;
+}
+
+.convo .ctxbar.warn .track > i {
+  background: var(--orange);
+}
+
+.convo .ctxbar.alert .track > i {
+  background: var(--red);
+}
+
+/* The count gives way before it overlaps: cut with an ellipsis once the bar has no room. */
+.convo .ctxbar .n {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.convo .ctxbar.warn .n {
+  color: var(--orange-text);
+}
+
+.convo .ctxbar.alert .n {
+  color: var(--red);
+}
+
+.convo .ctxbar .btn {
+  flex: none;
+}
+
+/* The actions sit at the row's right on the one line: the model button, Restart or Resume,
+   Hand off and Archive. The row never wraps; the bar gives way instead. */
+.convo .actions {
+  flex: none;
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.convo .actions[hidden] {
+  display: none;
+}
+
+/* A status, not a control: shown only on a pinned chat, the height of the buttons beside it. */
+.convo .actions .pinned {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.convo .actions .pinned svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.convo .actions .btn {
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.convo .actions .btn.on {
+  background: var(--fill-strong);
+}
+
+/* The model is the CLI's default, not one the session has answered on (`modelAssumed`). */
+.convo .actions .btn.guess {
+  opacity: 0.7;
+}
+
+/* Compact, when the context is in the red band, and Hand off when it is worth pressing: the
+   warning colour as a nudge, not an alarm. */
+.convo .actions .btn.nudge,
+.convo .ctxbar .btn.nudge {
+  color: var(--orange-text);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
+
+/* Hand off in the red band, in the colour the header's context pill has there. */
+.convo .actions .btn.nudge.alert {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+}
+
+/* Hand off, Archive, Files and the shell, as one group at the end of the row, so a narrow row wraps them
+   together and to the right. `far`, not `right`: `.right` is the details column, and a
+   button wearing that class took the column's rules with it — at phone width, the bottom
+   sheet's. */
+.convo .actions .far {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+/* The model list, under the action row rather than floating over the log. */
+.convo .models {
+  flex: none;
+  padding: 6px;
+  border-bottom: 1px solid var(--sep);
+  background: var(--side);
+}
+
+.convo .models[hidden] {
+  display: none;
+}
+
+.convo .models .m {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.convo .models .m:hover:not(:disabled) {
+  background: var(--fill);
+}
+
+.convo .models .m:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.convo .models .m.on {
+  background: var(--fill);
+}
+
+.convo .models .m.on .l::after {
+  content: ' ✓';
+  color: var(--accent);
+}
+
+.convo .models .m .l {
+  display: block;
+  font-size: 13px;
+}
+
+.convo .models .m .d {
+  display: block;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.convo .models .efforts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px 2px;
+  margin-top: 4px;
+  border-top: 1px solid var(--sep);
+}
+
+.convo .models .e {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--text2);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.convo .models .efforts .waiting {
+  font-size: 11px;
+  color: var(--text2);
+  padding: 3px 1px;
+}
+
+.convo .models .e:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.convo .models .e:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.convo .models .e.on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.convo .models .why {
+  padding: 5px 8px 2px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+/* The log: one column, the pane less 24 px a side up to `--measure`, centred, every row
+   left-aligned inside it and as wide as it. A text column pinned left with the spare width
+   all on one side read lopsided, and a narrower measure inside a wider column left prose at
+   two-thirds of the pane (2026-10-14). */
+.convo .log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 24px 20px;
+  display: grid;
+  grid-template-columns: minmax(0, var(--measure));
+  justify-content: center;
+  align-content: start;
+  gap: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  overscroll-behavior: contain;
+}
+
+.convo .note {
+  color: var(--text3);
+  font-size: 12px;
+  text-align: center;
+  padding: 6px 0 4px;
+}
+
+.convo .note[hidden] {
+  display: none;
+}
+
+/* The way up to earlier pages: read on its own as you near the top, a button for when it is not. */
+.convo .log .more {
+  justify-self: center;
+  background: none;
+  border: 0;
+  color: var(--text3);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.convo .log .more:hover:not(:disabled) {
+  color: var(--text2);
+}
+
+.convo .log .more:disabled {
+  cursor: default;
+}
+
+.convo .log .more[hidden] {
+  display: none;
+}
+
+.convo .msg {
+  word-break: break-word;
+}
+
+/* The time sits over what was said: you read when, then what. */
+.convo .msg .when {
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+/* What you typed: as wide as the rest and on the same left edge, told apart by a faint accent
+   tint and a rail rather than by side — a right-aligned bubble was tried and was harder to read
+   in a wide window. Text, not a filled bubble, so it reads at the same weight as the answer. */
+.convo .msg.user .body {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 2px solid var(--accent);
+  white-space: pre-wrap;
+  background: var(--accent-tint);
+}
+
+/* A long paste, three lines high until Show more (`clampPaste`). */
+.convo .msg.user.long:not(.open) .body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.convo .msg .paste {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-left: 14px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.convo .msg .paste .show {
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+@media (pointer: coarse) and (hover: none) {
+  .convo .msg .paste .show {
+    min-height: 44px;
+    padding: 0 8px;
+  }
+
+  .convo .stepsblock .sb-call {
+    min-height: 44px;
+    align-items: center;
+  }
+}
+
+/* Attached images: a row of same-sized thumbnails, about an app icon's size, wrapping when
+   there are many, the tint hugging them; a click opens one full size. Drawn at full size a
+   screenshot took a screen of the log. */
+.convo .msg.user.image .body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.convo .msg .pic-wait {
+  padding: 2px 6px;
+}
+
+/* An attached PDF or text file: its name beside a page icon; the contents are the model's. */
+.convo .msg.user.file .body {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.convo .msg.user.file .body svg,
+.convo .pending .chip svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.convo .msg .pic {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.convo .msg .pic img {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--scrim-deep);
+  cursor: zoom-out;
+}
+
+.lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+/* ── Files: the list, the viewer, and the viewer over the pane (ui-details.md) ─────────── */
+
+.fside > .body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+
+/* Two boxes (files.js): the list pane — the filter, the lists, Browse — and the viewer, where the
+   file scrolls, not the box. Side by side in Files mode on a wide screen; in the sheet the
+   viewer, while a file is open, is alone. */
+.fside {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.fmain {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
+  font-size: 13px;
+}
+
+.fmain[hidden] {
+  display: none;
+}
+
+.fside .nothing,
+.fmain .nothing,
+.fileview-full .nothing {
+  padding: 4px;
+  color: var(--text3);
+  font-size: 12.5px;
+}
+
+.fgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fgroup .g-head {
+  margin-bottom: 3px;
+  padding: 0 4px;
+  font-size: 11.5px;
+  color: var(--text3);
+}
+
+/* A row: the name over its folder, the time and versions at the right. */
+.frow {
+  appearance: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.frow:hover {
+  background: var(--fill);
+}
+
+/* The open file's row, in the lists and the tree: tinted, an accent edge at its left. */
+.frow.on,
+.brow.on {
+  background: var(--fill);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.frow .fname,
+.frow .fdir {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frow .fname {
+  font-weight: 550;
+}
+
+.frow .fdir {
+  grid-column: 1;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text3);
+}
+
+.frow .fmeta {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  font-size: 11.5px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.frow.gone .fname {
+  color: var(--text2);
+}
+
+/* The filter above the lists, outside the painted body so a repaint keeps its focus. */
+.ffilter {
+  flex: none;
+  position: relative;
+  padding: 8px 12px 0;
+}
+
+.ffilter .clear-search {
+  position: absolute;
+  right: 17px;
+  bottom: 5px;
+}
+
+.ffilter[hidden] {
+  display: none;
+}
+
+.ffilter .input {
+  height: 30px;
+  padding-right: 28px;
+  font-size: 12.5px;
+}
+
+.ffilter .input:focus {
+  border-color: var(--accent);
+}
+
+/* Browse: its heading folds it and carries the ignored toggle at its right. */
+.fgroup .bhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btoggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bign {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.bign input {
+  margin: 0;
+}
+
+/* The tree: mono rows indented by depth, a chevron on folders. */
+.btree {
+  display: flex;
+  flex-direction: column;
+}
+
+.brow {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 8px 3px calc(8px + var(--depth, 0) * 14px);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.brow:hover {
+  background: var(--fill);
+}
+
+.brow.ign,
+.brow.muted {
+  color: var(--text3);
+}
+
+.brow.muted {
+  cursor: default;
+}
+
+.brow.muted:hover {
+  background: transparent;
+}
+
+.bchev {
+  flex: none;
+  width: 12px;
+  color: var(--text2);
+}
+
+.bchev::before {
+  content: '▾';
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+
+.bchev[data-open='false']::before {
+  transform: rotate(-90deg);
+}
+
+.bchev.blank::before {
+  content: '';
+}
+
+.bname {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bhint {
+  flex: none;
+  margin-left: auto;
+  padding-left: 8px;
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.bnote {
+  padding: 3px 8px 3px calc(24px + var(--depth, 0) * 14px);
+  font-size: 12px;
+  color: var(--text3);
+}
+
+/* The viewer: the file's name and folder, the version and the view, then the file itself. */
+.fview {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+}
+
+.fhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fpath {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fpath small {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ftools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ftools .seg button {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.fversion {
+  max-width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--sep);
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.fwhen {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.fbody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.fbody .doc {
+  font-size: 13.5px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.fbody .doc > :first-child {
+  margin-top: 0;
+}
+
+.fraw {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.fnote {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.fnote.top {
+  margin: 0 0 8px;
+}
+
+.fnote .btn {
+  margin-left: 6px;
+}
+
+/* The header row holds the version and Copy beside the name; the name gives way first, then the version. */
+.fhead .fversion,
+.fhead .fwhen {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+}
+
+.fhead .fwhen {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fhead .btn.icon.sm {
+  flex: none;
+}
+
+/* What sticks over scrolled content (a table's header row, its first column) is painted in the
+   viewer's own background: the column's, or the page's in the expanded layer. */
+.filespanel {
+  --fview-bg: var(--side);
+}
+
+.fileview-full {
+  --fview-bg: var(--bg);
+}
+
+/* Code: CodeMirror fills the body and scrolls inside itself (code-view.js), the cut note under it. */
+.fbody.fcode {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fcm {
+  flex: 1;
+  min-height: 0;
+}
+
+/* A picture fits the width and opens in the conversation's zoom on a click. */
+.fpic {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.fpic[hidden] {
+  display: none;
+}
+
+.fpic img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 6px;
+}
+
+/* A PDF in the browser's own viewer, or an HTML preview, the body's whole height; a cut note
+   under the preview. */
+.fbody.fframe {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fbody.fframe[hidden] {
+  display: none;
+}
+
+.fpdf {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+/* The HTML preview (files.js; the document is server/lib/preview.mjs's). No background of its own: the frame keeps the page's
+   colour scheme while a file that declares none is light, and a browser paints an opaque canvas
+   behind an embedded document whose scheme differs, so the file is drawn as it would be alone. */
+.fhtml {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 6px;
+}
+
+/* What the preview refused, beside its control; nothing while none. */
+.fblocked {
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* No preview (or, in the sheet, a PDF): what it is and its size, and the one thing to do with it. */
+.fcard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  color: var(--text2);
+  font-size: 13px;
+}
+
+.fcard[hidden] {
+  display: none;
+}
+
+.fcard .btn,
+.fnote .btn {
+  text-decoration: none;
+}
+
+/* A CSV or TSV: mono cells, the header row stuck to the top while the body scrolls both ways. */
+.ftable {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ftable th,
+.ftable td {
+  padding: 4px 10px;
+  border-right: 1px solid var(--sep);
+  border-bottom: 1px solid var(--sep);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ftable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(var(--code), var(--code)), var(--fview-bg);
+  font-weight: 650;
+}
+
+/* A wide table in rendered Markdown scrolls in its box with its first column stuck, so each row
+   keeps its label. The viewer's alone: the log's tables are the conversation's. */
+.fbody .doc .tablewrap :is(th, td):first-child {
+  position: sticky;
+  left: 0;
+  background: var(--fview-bg);
+}
+
+.fbody .doc .tablewrap th:first-child {
+  background: linear-gradient(var(--code), var(--code)), var(--fview-bg);
+}
+
+/* Expanded: the file over the chat column and the details column together, the sidebar left
+   in place. Placed over the grid, never in it: as a grid item it took row one's cells and
+   pushed the chat and the column into a second row. `--side-w` is always set on `.app` — inline
+   while the sidebar is open, the rail's width from the stylesheet when collapsed — so the layer
+   starts where the sidebar ends without measuring. Esc puts it away (files.js). */
+.fileview-full {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--side-w);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: env(safe-area-inset-top);
+  background: var(--bg);
+}
+
+/* The layer's mode header, the column's `.rmode` drawn again with the list pane's toggle and
+   Close, over the two panes: the column's own boxes, moved in while it is up (files.js). */
+.fmode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px 0 8px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.fmode .btn[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.fpanes {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.fileview-full .fside {
+  flex: 0 0 var(--tree-w, 220px);
+  border-right: 1px solid var(--sep);
+}
+
+/* The list pane's grip on its right edge, the shell's grips' pattern (files.js `wireTreeGrip`). */
+.ftree-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--tree-w, 220px) - 3px);
+  width: 6px;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.ftree-grip:hover,
+.ftree-grip:focus-visible,
+.fileview-full.resizing .ftree-grip {
+  background: var(--accent);
+  opacity: 0.5;
+  outline: none;
+}
+
+.fileview-full.resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+.fileview-full[data-notree] .fside,
+.fileview-full[data-notree] .ftree-grip {
+  display: none;
+}
+
+.fileview-full .fmain {
+  padding: 12px 20px calc(16px + env(safe-area-inset-bottom));
+}
+
+.fileview-full .fbody .doc {
+  font-size: 14px;
+}
+
+/* ── Markdown, as rendered by markdown.js ─────────────────────────────────────────── */
+
+.convo .msg.assistant .body > :first-child {
+  margin-top: 0;
+}
+
+.convo .msg.assistant .body > :last-child {
+  margin-bottom: 0;
+}
+
+:is(.convo .body, .doc) p {
+  margin: 0 0 10px;
+}
+
+:is(.convo .body, .doc) h1,
+:is(.convo .body, .doc) h2,
+:is(.convo .body, .doc) h3,
+:is(.convo .body, .doc) h4,
+:is(.convo .body, .doc) h5,
+:is(.convo .body, .doc) h6 {
+  margin: 18px 0 8px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+:is(.convo .body, .doc) h1 {
+  font-size: 19px;
+}
+
+:is(.convo .body, .doc) h2 {
+  font-size: 17px;
+}
+
+:is(.convo .body, .doc) h3 {
+  font-size: 15.5px;
+}
+
+:is(.convo .body, .doc) h4,
+:is(.convo .body, .doc) h5,
+:is(.convo .body, .doc) h6 {
+  font-size: 14.5px;
+}
+
+:is(.convo .body, .doc) ul,
+:is(.convo .body, .doc) ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+
+:is(.convo .body, .doc) li {
+  margin: 2px 0;
+}
+
+:is(.convo .body, .doc) li > p {
+  margin: 0;
+}
+
+:is(.convo .body, .doc) li > ul,
+:is(.convo .body, .doc) li > ol {
+  margin: 2px 0 0;
+}
+
+:is(.convo .body, .doc) a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+:is(.convo .body, .doc) a:hover {
+  text-decoration: underline;
+}
+
+/* A file path a session wrote in prose, as a button into the Files section (ui-conversation.md,
+   ui-details.md): the text's own font, so one in a code span still reads as code, with a link's
+   colour and a faint underline that fills on hover. */
+button.path {
+  all: unset;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  text-underline-offset: 2px;
+}
+
+button.path:hover {
+  text-decoration-color: currentColor;
+}
+
+button.path:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+:is(.convo .body, .doc) code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--code);
+}
+
+:is(.convo .body, .doc) pre.code {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  overflow: auto;
+  position: relative;
+}
+
+:is(.convo .body, .doc) pre.code code {
+  padding: 0;
+  background: none;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+:is(.convo .body, .doc) pre.code[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 10.5px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Not scoped to the conversation: the agent map and the activity panel draw Markdown too. */
+.codewrap {
+  position: relative;
+}
+
+.codewrap .copycode {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--sep);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text2);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.codewrap:hover .copycode,
+.codewrap .copycode:focus-visible {
+  opacity: 1;
+}
+
+.codewrap .copycode:hover {
+  color: var(--text);
+}
+
+/* Nothing hovers on a phone, so the button is simply there. */
+@media (hover: none) {
+  .codewrap .copycode {
+    opacity: 1;
+  }
+}
+
+/* The language label gives up the corner to the button. */
+:is(.convo .body, .doc) .codewrap pre.code[data-lang]::before {
+  right: 62px;
+}
+
+:is(.convo .body, .doc) blockquote {
+  margin: 0 0 10px;
+  padding: 2px 12px;
+  border-left: 3px solid var(--sep);
+  color: var(--text2);
+}
+
+:is(.convo .body, .doc) hr {
+  border: 0;
+  border-top: 1px solid var(--sep);
+  margin: 14px 0;
+}
+
+:is(.convo .body, .doc) .tablewrap {
+  overflow-x: auto;
+  margin: 0 0 10px;
+}
+
+:is(.convo .body, .doc) table {
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+:is(.convo .body, .doc) th,
+:is(.convo .body, .doc) td {
+  padding: 6px 10px;
+  border: 1px solid var(--sep);
+  text-align: left;
+  vertical-align: top;
+}
+
+:is(.convo .body, .doc) th {
+  background: var(--code);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+:is(.convo .body, .doc) del {
+  opacity: 0.6;
+}
+
+/* A run of tool calls leaves one marker in the log; the calls themselves are in Activity. */
+.convo .steps {
+  justify-self: start;
+  appearance: none;
+  border: 1px solid var(--sep);
+  background: transparent;
+  color: var(--text3);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.convo .steps::after {
+  content: ' ›';
+}
+
+.convo .steps:hover {
+  color: var(--text);
+  background: var(--fill);
+}
+
+/* Open, the marker points down at its steps. */
+.convo .steps[aria-expanded='true']::after {
+  content: ' ⌄';
+}
+
+/* A run's steps, opened in place under its marker (conversation.js `toggleSteps`): quiet mono
+   lines, each a button to its row in Activity. */
+.convo .stepsblock {
+  margin-top: -8px;
+  padding: 6px 0 6px 10px;
+  border-left: 1px solid var(--sep);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text2);
+}
+
+.convo .stepsblock .sb-head {
+  padding: 0 6px 4px;
+  color: var(--text3);
+}
+
+.convo .stepsblock .sb-call {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.convo .stepsblock .sb-call[hidden] {
+  display: none;
+}
+
+.convo .stepsblock .sb-call:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.convo .stepsblock .sb-tool {
+  flex: none;
+  min-width: 8ch;
+  color: var(--text);
+}
+
+.convo .stepsblock .sb-sum {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* While working: one line under the last thing the session said (`paintLive`). */
+.convo .live {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11.5px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.convo .live[hidden] {
+  display: none;
+}
+
+.convo .live .lv-dot {
+  margin-right: 6px;
+  color: var(--accent);
+}
+
+/* A background agent's completion: the marker names it, the report is in Activity. */
+.convo .steps.agent {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 40%, var(--sep));
+}
+
+.convo .steps.agent::before {
+  content: '✓ ';
+}
+
+.convo .steps.agent.failed {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 40%, var(--sep));
+}
+
+.convo .steps.agent.failed::before {
+  content: '✗ ';
+}
+
+/* A note from Outpost itself — a Jenkins result that woke the chat. A pill like the markers,
+   but not a button: there is nothing behind it to open. */
+.convo .onote {
+  justify-self: start;
+  max-width: 100%;
+  border: 1px solid var(--sep);
+  border-radius: 999px;
+  padding: 2px 10px;
+  color: var(--text2);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+
+.convo .onote.ok {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 40%, var(--sep));
+}
+
+.convo .onote.ok::before {
+  content: '✓ ';
+}
+
+.convo .onote.failed {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 40%, var(--sep));
+}
+
+.convo .onote.failed::before {
+  content: '✗ ';
+}
+
+/* The summary a session carried on from after compacting: a pill like the markers that opens
+   in place to the summary, rather than a page of history drawn as a bubble of yours. */
+.convo .compacted {
+  justify-self: stretch;
+  max-width: 100%;
+}
+
+.convo .compacted > summary {
+  display: inline-block;
+  list-style: none;
+  border: 1px solid var(--sep);
+  border-radius: 999px;
+  padding: 2px 10px;
+  color: var(--text3);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.convo .compacted > summary::-webkit-details-marker {
+  display: none;
+}
+
+.convo .compacted > summary::after {
+  content: ' ›';
+}
+
+.convo .compacted[open] > summary::after {
+  content: ' ⌄';
+}
+
+.convo .compacted > summary:hover {
+  color: var(--text);
+  background: var(--fill);
+}
+
+/* Where a chat's conversation was started fresh from a handoff (conversation.js `append`): a
+   rule across the log with the words in it, and the handoff open beneath — the earlier
+   conversation above, the new one below. */
+.convo .fresh {
+  justify-self: stretch;
+  max-width: 100%;
+  margin: 10px 0 4px;
+}
+
+.convo .fresh .divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--green);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.convo .fresh .divider::before,
+.convo .fresh .divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid color-mix(in srgb, var(--green) 45%, var(--sep));
+}
+
+.convo .fresh .handoff-doc {
+  margin-top: 8px;
+}
+
+.convo .fresh .handoff-doc > summary {
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 11.5px;
+}
+
+.convo .fresh .handoff-doc > .body {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--green) 35%, var(--sep));
+  border-radius: 12px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.convo .compacted > .body {
+  margin-top: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--sep);
+  border-radius: 12px;
+  color: var(--text2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* Tool calls are rows, not bubbles: the tool, a one-line summary, and the result on open. */
+.actpanel .tool,
+.agentmap .tool {
+  align-self: stretch;
+  border: 1px solid var(--sep);
+  border-radius: 10px;
+  background: var(--side);
+  font-size: 12.5px;
+}
+
+.actpanel .tool summary,
+.agentmap .tool summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text2);
+}
+
+.actpanel .tool summary::-webkit-details-marker,
+.agentmap .tool summary::-webkit-details-marker {
+  display: none;
+}
+
+.actpanel .tool .name,
+.agentmap .tool .name {
+  font-weight: 600;
+  color: var(--text);
+  flex: none;
+}
+
+.actpanel .tool .sum,
+.agentmap .tool .sum {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.actpanel .tool .state,
+.agentmap .tool .state {
+  flex: none;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.actpanel .tool.done .state,
+.agentmap .tool.done .state {
+  color: var(--green);
+}
+
+.actpanel .tool.error .state,
+.agentmap .tool.error .state {
+  color: var(--red);
+}
+
+.actpanel .tool pre,
+.agentmap .tool pre {
+  margin: 0;
+  padding: 8px 10px;
+  border-top: 1px solid var(--sep);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  color: var(--text2);
+}
+
+.actpanel .tool .result,
+.agentmap .tool .result {
+  color: var(--text);
+}
+
+.actpanel .tool .result[hidden],
+.agentmap .tool .result[hidden] {
+  display: none;
+}
+
+/* An agent's report is a document, drawn as one: Markdown, the panel's text size, scrolling. */
+.actpanel .tool .result.md {
+  padding: 8px 12px;
+  border-top: 1px solid var(--sep);
+  font-size: 12.5px;
+  line-height: 1.5;
+  max-height: 50vh;
+  overflow: auto;
+  word-break: break-word;
+}
+
+.actpanel .tool .result.md > :first-child {
+  margin-top: 0;
+}
+
+.actpanel .tool .result.md > :last-child {
+  margin-bottom: 0;
+}
+
+/* Activity's rows are flat, one line each: a dot for the state, the tool in a narrow muted
+   column, the summary. No card around each, and no "done": only what is not done is marked.
+   The agent map keeps the card rows above. */
+.actpanel .tool {
+  border: 0;
+  border-radius: 6px;
+  background: none;
+}
+
+.actpanel .tool[open] {
+  background: var(--fill);
+}
+
+/* A row opened from a line of the log's steps, lit for a moment where it landed. */
+.actpanel .tool.lit[open],
+.actpanel .tool.lit {
+  background: var(--accent-tint);
+  transition: background-color 600ms;
+}
+
+.actpanel .tool summary {
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+
+.actpanel .tool summary:hover {
+  background: var(--fill);
+}
+
+.actpanel .tool .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--accent);
+}
+
+.actpanel .tool.done .dot {
+  background: var(--grey);
+}
+
+.actpanel .tool.error .dot {
+  background: var(--red);
+}
+
+.actpanel .tool .name {
+  min-width: 36px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text3);
+}
+
+.actpanel .tool .sum {
+  color: var(--text);
+}
+
+.actpanel .tool .state:empty {
+  display: none;
+}
+
+/* An edit's change, a line per row: red out, green in, the file on top. Collapsed with its row. */
+.actpanel .tool .diff {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  white-space: pre;
+  overflow: auto;
+}
+
+.actpanel .diff .l {
+  padding: 0 10px;
+  min-height: 1.45em;
+}
+
+.actpanel .diff .file {
+  color: var(--text3);
+  padding-bottom: 4px;
+}
+
+.actpanel .diff .add {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+}
+
+.actpanel .diff .del {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+
+.actpanel .diff .gap {
+  color: var(--text3);
+}
+
+/* Activity: groups of calls under the time each run began, the newest at the bottom. */
+.actpanel .body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+}
+
+.actpanel .nothing {
+  color: var(--text3);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.actpanel .group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 12px;
+  transition: background-color 600ms;
+}
+
+.actpanel .group.lit {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.actpanel .g-head {
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11.5px;
+  color: var(--text3);
+  padding: 0 2px;
+}
+
+.actpanel .g-when {
+  font-weight: 600;
+}
+
+/* The permission bar: what is being asked, in the dialog's own words, and the answers. */
+/* The strip above the composer, always there: a spinner and what the session is doing, or a dot and its state. */
+.convo .strip {
+  /* The Stop popover's anchor. */
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 20px;
+  border-top: 1px solid var(--sep);
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.convo .strip[hidden] {
+  display: none;
+}
+
+.convo .strip .text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.convo .strip .dot {
+  width: 8px;
+  height: 8px;
+  margin: 0 2px;
+  flex: none;
+}
+
+.convo .strip .dot[hidden],
+.convo .strip .spin[hidden] {
+  display: none;
+}
+
+.convo .strip .spin {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--fill-strong);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+  flex: none;
+}
+
+/* Interrupt (conversation.js `askInterrupt`): an amber pill at the strip's left end, before the
+   spinner, shown only while a turn runs. First, not after the line: the line changes with every
+   tool call and moved it under the pointer. Not beside Send: on a phone those were adjacent taps. */
+.convo .strip .halt {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  appearance: none;
+  border: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--orange-text);
+  cursor: pointer;
+}
+
+.convo .strip .halt:hover {
+  background: color-mix(in srgb, var(--orange) 28%, transparent);
+}
+
+.convo .strip .halt svg {
+  width: 11px;
+  height: 11px;
+}
+
+.convo .strip .halt[hidden],
+.convo .strip .halt-pop[hidden] {
+  display: none;
+}
+
+/* What Stop would end, when it is more than the turn: anchored over the strip's left end, above
+   the composer, not a modal. The confirm bar's order — Cancel, then the verb. */
+.convo .strip .halt-pop {
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  width: min(360px, calc(100% - 24px));
+  padding: 10px 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.convo .strip .halt-pop .head {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.convo .strip .halt-pop .why {
+  margin-bottom: 10px;
+  color: var(--text2);
+}
+
+.convo .strip .halt-pop .row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.convo .strip .halt-pop .btn.amber {
+  background: var(--orange);
+  color: #1d1d1f;
+}
+
+/* The setup pill (conversation.js `paintSetup`): the agents pill's shape, coloured by state. */
+.convo .strip .setup {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  appearance: none;
+  border: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--fill-strong);
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.convo .strip .setup .spin {
+  width: 10px;
+  height: 10px;
+}
+
+.convo .strip .setup[data-state='done'] {
+  color: var(--green);
+}
+
+.convo .strip .setup[data-state='failed'] {
+  background: color-mix(in srgb, var(--red) 18%, var(--fill-strong));
+  color: var(--red);
+}
+
+.convo .strip .setup[hidden] {
+  display: none;
+}
+
+/* The setup window (setup-view.js): a repo a section — its state, then its log. */
+.setupview .sheet {
+  width: min(860px, 100%);
+  height: min(680px, calc(100% - 32px));
+}
+
+.setupview header .sub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.setupview .body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.setupview .setup-repo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setupview .setup-repo .head {
+  align-items: center;
+  gap: 8px;
+}
+
+.setupview .setup-repo .sym {
+  width: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.setupview .setup-repo[data-state='done'] .sym {
+  color: var(--green);
+}
+
+.setupview .setup-repo[data-state='failed'] .sym,
+.setupview .setup-repo .bad {
+  color: var(--red);
+}
+
+.setupview .setup-repo .btn {
+  margin-left: auto;
+}
+
+.setupview .setup-repo pre.log {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.convo .strip .agents {
+  flex: none;
+  appearance: none;
+  border: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--fill-strong);
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.convo .strip .agents.out {
+  background: color-mix(in srgb, var(--accent) 22%, var(--fill-strong));
+}
+
+.convo .strip .agents:hover {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.convo .strip .agents[hidden] {
+  display: none;
+}
+
+/* Background commands (conversation.js `paintCommands`): the agents pill's shape, a terminal and
+   a count; tinted while any run, at any status. */
+.convo .strip .cmds {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  appearance: none;
+  border: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--fill-strong);
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.convo .strip .cmds svg {
+  width: 13px;
+  height: 13px;
+}
+
+.convo .strip .cmds.out {
+  background: color-mix(in srgb, var(--accent) 22%, var(--fill-strong));
+}
+
+.convo .strip .cmds:hover {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* The handoff's block in the log (conversation.js `paintHandoff`): one object for the whole of
+   a handoff, its state in the mark and the tint — green ready, plain old, accent being written,
+   red failed, yellow held after a limit reset. Marks only: the strip is the one spinner. While
+   one is written it is sticky to the log's foot, in sight without scrolling, and settles in
+   place once ready. Its text opens inside it, scrolling, so it never pushes the log away. */
+.convo .hblock {
+  justify-self: stretch;
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--sep);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 13px;
+}
+
+.convo .hblock.progress {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--sep));
+  box-shadow: 0 -6px 16px var(--bg);
+}
+
+.convo .hblock.ready {
+  border-color: color-mix(in srgb, var(--green) 45%, var(--sep));
+  background: color-mix(in srgb, var(--green) 7%, var(--bg));
+}
+
+.convo .hblock.error {
+  border-color: color-mix(in srgb, var(--red) 45%, var(--sep));
+}
+
+.convo .hblock.held {
+  border-color: color-mix(in srgb, var(--yellow) 50%, var(--sep));
+  background: color-mix(in srgb, var(--yellow) 10%, var(--bg));
+}
+
+.convo .hblock .hb-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.convo .hblock .hb-mark {
+  flex: none;
+  width: 1em;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text3);
+}
+
+.convo .hblock.progress .hb-mark {
+  color: var(--accent);
+}
+
+.convo .hblock.ready .hb-mark {
+  color: var(--green);
+}
+
+.convo .hblock.error .hb-mark {
+  color: var(--red);
+}
+
+.convo .hblock.held .hb-mark {
+  color: var(--yellow);
+}
+
+.convo .hblock .hb-what {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.convo .hblock.stale .hb-what {
+  color: var(--text2);
+}
+
+.convo .hblock .hb-tag {
+  flex: none;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  color: var(--orange-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.convo .hblock .hb-sub {
+  margin: 4px 0 0 calc(1em + 8px);
+  color: var(--text2);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+/* How long it has been writing, at the head's end. */
+.convo .hblock .hb-time {
+  margin-left: auto;
+  flex: none;
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+/* The steps of one being written: marks, the one under way in the accent. */
+.convo .hblock .hb-steps {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  color: var(--text3);
+  font-size: 12.5px;
+}
+
+.convo .hblock .hb-steps li {
+  display: flex;
+  gap: 8px;
+}
+
+.convo .hblock .hb-steps li.now {
+  color: var(--text);
+}
+
+.convo .hblock .hb-steps li.now .hb-mark {
+  color: var(--accent);
+}
+
+.convo .hblock .hb-steps li.done {
+  color: var(--text2);
+}
+
+.convo .hblock .hb-steps li.done .hb-mark {
+  color: var(--green);
+}
+
+.convo .hblock .hb-body {
+  margin-top: 8px;
+  padding: 8px 12px;
+  max-height: 40vh;
+  overflow: auto;
+  border: 1px solid var(--sep);
+  border-radius: 10px;
+  background: var(--bg);
+  overflow-wrap: anywhere;
+}
+
+.convo .hblock .hb-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.convo .hblock .btn {
+  height: 28px;
+  padding: 0 11px;
+  font-size: 12px;
+}
+
+/* Start fresh's confirm, in place of the block's buttons: Cancel, then the verb. */
+.convo .hblock .hb-ask {
+  flex: 1;
+  text-align: right;
+}
+
+.convo .hblock .hb-ask .head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red);
+  margin-bottom: 2px;
+}
+
+.convo .hblock .hb-ask .why {
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.convo .hblock .hb-ask .row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* The request note the block stands in for (`placeHandoff`). */
+.convo .onote.hask.absorbed {
+  display: none;
+}
+
+/* Hand off with a handoff ready: it goes to the block, and says so in green. */
+.convo .actions .btn.icon.ready,
+.convo .actions .btn.nudge.ready {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+}
+
+/* A column held to most of the screen: whatever it holds scrolls inside it (the card), and the
+   buttons under it never leave the screen — a routine card with a long prompt had pushed Allow
+   and Deny below the bottom (the owner's, 2026-10-15). */
+.convo .ask {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 75vh;
+  padding: 10px 12px;
+  border-top: 1px solid var(--sep);
+  background: color-mix(in srgb, var(--orange) 10%, var(--bg));
+}
+
+.convo .ask[hidden] {
+  display: none;
+}
+
+.convo .ask .head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orange);
+  margin-bottom: 6px;
+}
+
+.convo .ask .q {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.convo .ask .row {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* A routine Outpost asks to save (routines.md), drawn as what it will be. Every line wraps
+   anywhere — a timezone or a repo name has no spaces to break at, and a phone must never
+   scroll sideways — and the prompt scrolls inside its own box, held to a share of the screen,
+   so a long one cannot push Approve and Deny off the bottom. */
+.convo .ask .sched-card {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text2);
+  overflow-wrap: anywhere;
+}
+
+.convo .ask .sched-card .t {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+}
+
+.convo .ask .sched-card.delete .t {
+  color: var(--red);
+}
+
+.convo .ask .sched-card .n {
+  margin: 2px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.convo .ask .sched-card .warn {
+  color: var(--orange-text);
+}
+
+.convo .ask .sched-card .chg {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--text);
+}
+
+/* The routine's flow (flow.js), small: a fixed strip of the bar, never the bar's whole height,
+   so Approve and Deny stay on screen; a flow wider than it pans and zooms in place. */
+.convo .ask .sched-card .card-flow {
+  position: relative;
+  height: 170px;
+  margin: 8px 0 0;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  overflow-wrap: normal;
+}
+
+.convo .ask .sched-card .card-flow .flow-zoom {
+  right: 6px;
+  bottom: 6px;
+}
+
+.convo .ask .sched-card .card-flow .flow-zoom button {
+  min-width: 24px;
+  height: 24px;
+}
+
+/* What an update changes, outlined in the accent. */
+.flow .node.changed {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+/* A long change folded to its counts, opening on what moved (conversation.js `changeHtml`). */
+.convo .ask .sched-card .chg summary,
+.convo .ask .sched-card .pd summary {
+  cursor: pointer;
+  color: var(--text);
+}
+
+.convo .ask .sched-card .chg .add {
+  color: var(--green);
+}
+
+.convo .ask .sched-card .chg .del {
+  color: var(--red);
+}
+
+.convo .ask .sched-card .diff {
+  margin: 6px 0 2px;
+  max-height: min(260px, 35vh);
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--code);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.convo .ask .sched-card .dl {
+  padding: 1px 8px;
+  white-space: pre-wrap;
+  color: var(--text2);
+}
+
+.convo .ask .sched-card .dl.add {
+  color: var(--text);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+}
+
+.convo .ask .sched-card .dl.del {
+  color: var(--text2);
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--red) 60%, transparent);
+}
+
+.convo .ask .sched-card .dl.add::before {
+  content: '+ ';
+  color: var(--green);
+}
+
+.convo .ask .sched-card .dl.del::before {
+  content: '− ';
+  color: var(--red);
+}
+
+.convo .ask .sched-card .dl.gap {
+  color: var(--text3);
+}
+
+/* The files a publish would remove from a dataset's source, under the question: the same box
+   as the routine card, scrolling inside the bar so Yes and No stay on screen; paths in mono,
+   broken anywhere, since a run's artifact path is long and a phone must not scroll sideways. */
+.convo .ask .files-card {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text2);
+  overflow-wrap: anywhere;
+}
+
+.convo .ask .files-card .t {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--red);
+}
+
+.convo .ask .files-card ul {
+  margin: 4px 0 0;
+  padding: 0 0 0 18px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.convo .ask .files-card .more {
+  margin-top: 4px;
+  color: var(--text3);
+}
+
+.convo .ask .sched-card .pd {
+  margin: 8px 0 0;
+}
+
+.convo .ask .sched-card .p {
+  margin: 8px 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--sep);
+  color: var(--text);
+  white-space: pre-wrap;
+  max-height: min(220px, 30vh);
+  overflow: auto;
+}
+
+/* `/registerRepo`'s card (ui-conversation.md): what Register will save, above the composer
+   where the person typed the command. Blue-tinted: the page answering what was asked, not
+   the session asking leave (orange) nor something that cannot be taken back (red). Labels
+   in a column beside their values, and every value wraps anywhere — a URL has no spaces. */
+.convo .register {
+  flex: none;
+  padding: 10px 12px;
+  border-top: 1px solid var(--sep);
+  background: color-mix(in srgb, var(--blue) 8%, var(--bg));
+}
+
+.convo .register[hidden] {
+  display: none;
+}
+
+.convo .register .head {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.convo .register .card {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 12.5px;
+  line-height: 1.4;
+  max-height: min(260px, 35vh);
+  overflow: auto;
+}
+
+.convo .register dt {
+  color: var(--text3);
+}
+
+.convo .register dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.convo .register .mono {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.convo .register .none {
+  color: var(--text3);
+}
+
+/* What the repo needs that the default container lacks: said before Register, not after a
+   setup that failed. */
+.convo .register .needs {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--orange-text);
+}
+
+.convo .register dt .check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text2);
+}
+
+.convo .register .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Spelled out at this rule's own weight: the shared `.row[hidden]` is two classes lighter
+   than the rule above and lost to it, so a question drew Yes / Always / Deny over its own
+   options — three verbs that have nothing to do with what was asked. */
+.convo .ask .row[hidden],
+.convo .ask .opts[hidden] {
+  display: none;
+}
+
+.convo .ask .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.3;
+  height: auto;
+  min-height: 36px;
+  padding: 7px 12px;
+  text-align: left;
+}
+
+/* One button per row of a question the session asked: label above, description under. */
+.convo .ask .opts {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.convo .ask .opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  height: auto;
+  padding: 8px 12px;
+  line-height: 1.35;
+}
+
+.convo .ask .opt b {
+  display: block;
+  font-weight: 600;
+}
+
+.convo .ask .opt span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  opacity: 0.75;
+}
+
+.convo .nocomposer {
+  flex: none;
+  padding: 10px 12px var(--foot-pad);
+  border-top: 1px solid var(--sep);
+  font-size: 12.5px;
+  color: var(--text2);
+}
+
+.convo .nocomposer[hidden] {
+  display: none;
+}
+
+/* The composer: a rounded field that grows with what is in it, and the two buttons beside it.
+   The vertical padding is roomier than the horizontal on purpose: it keeps the first and
+   last line off the border on a paragraph that fills the box. */
+.convo .composer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 12px var(--foot-pad);
+  border-top: 1px solid var(--sep);
+  background: var(--bg);
+}
+
+.convo .composer[hidden] {
+  display: none;
+}
+
+.convo .composer .row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+/* `width: 100%` is load-bearing: these are column flex containers, and an auto inline
+   margin on a flex item beats `align-items: stretch` — without a width the row shrinks to
+   its content and the box is a word wide. */
+.convo .composer .row,
+.convo .composer .pending,
+.convo .nocomposer,
+.convo .ask > * {
+  width: 100%;
+}
+
+.convo .composer textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  max-height: min(600px, 50vh);
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--text);
+  background: var(--fill);
+  border: 1px solid transparent;
+  border-radius: 19px;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+}
+
+.convo .composer textarea:focus {
+  border-color: var(--accent);
+  background: var(--side);
+}
+
+.convo .composer textarea::placeholder {
+  color: var(--text3);
+}
+
+.convo .composer .btn {
+  height: 38px;
+  width: 38px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.convo .composer .btn.send {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* A `/` command's suggestions, over the message box: `/addRepo`, then the repos it can add. */
+.convo .slash {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--side);
+}
+
+.convo .slash[hidden] {
+  display: none;
+}
+
+.convo .slash-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--sep);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.convo .slash-item:last-child {
+  border-bottom: 0;
+}
+
+.convo .slash-item:hover {
+  background: var(--fill);
+}
+
+.convo .slash-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.convo .pending {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.convo .pending[hidden] {
+  display: none;
+}
+
+.convo .pending .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 3px;
+  border-radius: 8px;
+  background: var(--fill);
+  font-size: 11.5px;
+  color: var(--text2);
+  max-width: 100%;
+}
+
+.convo .pending .chip img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.convo .pending .chip span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.convo .pending .chip button {
+  border: 0;
+  background: none;
+  color: var(--text2);
+  cursor: pointer;
+  font: inherit;
+  padding: 0 2px;
+}
+
+.convo.dropping {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+}
+
+/* ── settings ──────────────────────────────────────────────────────────────────────── */
+
+.settings-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.view-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 8px 10px;
+  border-bottom: 1px solid var(--sep);
+  flex: none;
+}
+
+.view-head h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* ── the host shell (terminal.js) ───────────────────────────────────────────────────── */
+
+/* Settings › Terminal: the page is as tall as the pane and as wide as it, the terminal filling
+   what its title leaves, rather than a 720 px column that scrolls. */
+.settings-view[data-page='terminal']:not([data-set='menu']) .set-pages {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 12px;
+}
+
+.set-page[data-page='terminal']:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  max-width: none;
+}
+
+.set-page[data-page='terminal'] > .group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.term-slot {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.term-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+}
+
+/* Who is logged in, and Terminate, over the screen. */
+.term-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  flex: none;
+}
+
+.term-head[hidden] {
+  display: none;
+}
+
+/* Sign in with Claude, above the token field (integrations.js). */
+.claude-signin {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.claude-signin .signin-step[hidden] {
+  display: none;
+}
+
+.claude-signin ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* The box to paste into by hand, above the key row, where the clipboard cannot be read. */
+.term-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--sep);
+  flex: none;
+}
+
+.term-paste textarea {
+  height: auto;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.term-view[hidden],
+.term-paste[hidden],
+.term-screen[hidden],
+.term-open[hidden],
+.term-keys[hidden] {
+  display: none;
+}
+
+.term-view .term-title {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--mono);
+}
+
+.term-open {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.term-open .row {
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.term-screens {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.term-screen {
+  position: absolute;
+  inset: 0;
+  padding: 6px 4px 4px 8px;
+}
+
+/* An ended terminal is a view of its own over the output, centred both ways, in the
+   empty state's manner — a bar at the foot was missed and a floating card looked stray. */
+.term-ended {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  background: var(--bg);
+  text-align: center;
+}
+
+.term-ended[hidden] {
+  display: none;
+}
+
+.term-ended h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.term-ended .reason {
+  max-width: min(520px, 100%);
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text2);
+  overflow-wrap: anywhere;
+}
+
+.term-ended .reason:empty {
+  display: none;
+}
+
+.term-ended .row {
+  margin-top: 10px;
+}
+
+/* Wrapped, not scrolled sideways: on a phone the arrows sat off the right edge unseen. */
+.term-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px var(--foot-pad);
+  border-top: 1px solid var(--sep);
+  flex: none;
+}
+
+/* The keys a phone's keyboard lacks; a real keyboard has every one of them. */
+@media not ((pointer: coarse) and (hover: none)) {
+  .term-keys {
+    display: none;
+  }
+}
+
+.term-keys .btn {
+  flex: none;
+  font-family: var(--mono);
+}
+
+/* ── a chat's shell drawer (chat-shell.js, ui-conversation.md) ─────────────────────── */
+
+/* Between the log and the composer, a flex child of the panel at its dragged height; expanded,
+   it takes the log's place. Its screens are on the sunken `--code`, never the host terminal's
+   `--bg`, so the two shells cannot be taken for each other. */
+.convo .cshell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 var(--drawer-h, 320px);
+  min-height: 160px;
+  border-top: 1px solid var(--sep);
+  background: var(--bg);
+}
+
+.convo.shell-full .cshell {
+  flex: 1 1 auto;
+}
+
+.convo.shell-full .log {
+  flex: 0 0 0;
+  padding-block: 0;
+  overflow: hidden;
+}
+
+.convo .cshell-grip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -3px;
+  height: 6px;
+  cursor: row-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.convo .cshell-grip:hover,
+.convo .cshell-grip:focus-visible,
+.convo .cshell.resizing .cshell-grip {
+  background: var(--accent);
+  opacity: 0.5;
+  outline: none;
+}
+
+.convo .cshell.resizing {
+  user-select: none;
+  cursor: row-resize;
+}
+
+.convo .cshell-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  min-width: 0;
+  padding: 3px 6px 3px 8px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.convo .cshell-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.convo .cshell-tab {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+}
+
+.convo .cshell-tab.on {
+  background: var(--fill);
+  color: var(--text);
+}
+
+/* Ended: kept as a tab until closed, dimmed like its `[ended]` line. */
+.convo .cshell-tab.ended {
+  opacity: 0.55;
+}
+
+.convo .cshell-tab button,
+.convo .cshell-add {
+  padding: 3px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.convo .cshell-tab .x {
+  padding-left: 0;
+  color: var(--text3);
+}
+
+.convo .cshell-tab .x:hover,
+.convo .cshell-add:hover {
+  color: var(--text);
+}
+
+.convo .cshell-add {
+  color: var(--text2);
+}
+
+.convo .cshell-where {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 4px;
+}
+
+/* A stopped container: the drawer folds to its header row, the sentence muted after the tabs,
+   and opens back to its height when the container runs (chat-shell.js `_paint`). */
+.convo .cshell[data-stopped] {
+  flex: none;
+  min-height: 0;
+}
+
+.convo .cshell[data-stopped] .cshell-head {
+  border-bottom: 0;
+}
+
+.convo .cshell-stopped {
+  flex: 1;
+  min-width: 0;
+  padding-left: 4px;
+  font-size: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.convo .cshell-head .btn[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.convo .cshell-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.convo .cshell-body .term-screen {
+  padding: 4px 4px 2px 8px;
+}
+
+/* In the terminal's place: the stopped container, a refusal, or the wait for the first one. */
+.convo .cshell-say {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text2);
+  background: linear-gradient(var(--code), var(--code)), var(--bg);
+}
+
+.convo .cshell-say.err {
+  color: var(--red);
+}
+
+.convo .cshell[hidden],
+.convo .cshell-grip[hidden],
+.convo .cshell-head[hidden],
+.convo .cshell-tabs[hidden],
+.convo .cshell-tab[hidden],
+.convo .cshell-add[hidden],
+.convo .cshell-stopped[hidden],
+.convo .cshell-where[hidden],
+.convo .cshell-body[hidden],
+.convo .cshell-say[hidden] {
+  display: none;
+}
+
+/* The tool row's end: Hand off, Archive, Files and the shell, one set of icon buttons of one
+   size, on a phone too (where only the first two show). */
+.convo .actions .far .btn.icon {
+  width: 28px;
+  padding: 0;
+}
+
+.convo .actions .far .btn.icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.convo .actions .btn[data-act='shell'][aria-pressed='true'],
+.convo .actions .btn[data-act='files'][aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--fill-strong);
+}
+
+/* Not built for a phone (the owner, 2026-10-15): the drawer and its button are absent under
+   1100 px, where the details column is a sheet too. */
+@media (max-width: 1099px) {
+  .convo .cshell,
+  .convo .actions .btn[data-act='shell'],
+  .convo .actions .btn[data-act='files'] {
+    display: none;
+  }
+
+  .convo.shell-full .log {
+    flex: 1;
+    padding-block: 16px 20px;
+    overflow-y: auto;
+  }
+}
+
+/* The bulk archive while picking (shell.js `setBulk`): held down, in orange. */
+.side-tools #btn-bulk.on {
+  color: var(--orange-text);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
+
+/* The bulk archive picking (chats.md): what a tap does now, and the way out. */
+.picking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 6px;
+  font-size: 12.5px;
+  color: var(--text2);
+}
+
+.picking span {
+  flex: 1;
+}
+
+.picking[hidden] {
+  display: none;
+}
+
+/* A picked row is orange where an open one is grey; a chat that is not at rest cannot be picked. */
+.chat[data-pick='true'],
+.chat[data-pick='true']:hover {
+  background: color-mix(in srgb, var(--orange) 18%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--orange) 60%, transparent);
+}
+
+.chat:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.chat:disabled:hover {
+  background: transparent;
+}
+
+.view-head .back {
+  display: none;
+  background: transparent;
+  color: var(--accent);
+}
+
+/* Settings is a menu of pages beside the page chosen. The menu sits where the cards used to
+   leave the pane empty, in the sidebar's quiet shape: rows of text, the chosen one on a soft
+   fill. On a phone the two take turns (`data-set`, below in the phone block). */
+.set-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+}
+
+.set-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 10px;
+  border-right: 1px solid var(--sep);
+  overflow-y: auto;
+}
+
+.set-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.set-link:hover {
+  background: var(--fill);
+}
+
+.set-link[aria-current='page'] {
+  background: var(--fill-strong);
+  font-weight: 600;
+}
+
+.set-link .chev {
+  display: none;
+  margin-left: auto;
+  color: var(--text3);
+  font-size: 18px;
+}
+
+.set-pages {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px 32px 48px;
+}
+
+.set-page {
+  max-width: 720px;
+}
+
+.set-page[hidden] {
+  display: none;
+}
+
+.set-title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* A page is sections divided by a hairline, not cards. Scoped to Settings on purpose: the
+   bare `.group` below is the old card, and the Activity panel's groups are `.group` too —
+   restyling the bare rule would have restyled them. */
+.settings-view .group {
+  padding: 20px 0;
+  border: 0;
+  border-top: 1px solid var(--sep);
+  border-radius: 0;
+  background: none;
+}
+
+.settings-view .set-title + .group {
+  border-top: 0;
+  padding-top: 10px;
+}
+
+/* A page with one group: the page's title already says what its heading would. */
+.set-page > .group:only-of-type > h3 {
+  display: none;
+}
+
+/* The push default, above the repos it applies to. */
+.push-default {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.push-default[hidden] {
+  display: none;
+}
+
+.push-default .sub {
+  max-width: 340px;
+}
+
+/* The custom push sentence, its Test, and what the Test found for each step. */
+.push-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* At the weight of the rule that sets its display, or the attribute loses (ui.md). */
+.push-custom[hidden] {
+  display: none;
+}
+
+.push-default .push-custom .sub,
+.cat-form .push-custom .sub {
+  max-width: 560px;
+}
+
+.push-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+}
+
+.push-steps:empty {
+  display: none;
+}
+
+.push-steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.push-steps li[data-ok='yes'] > span {
+  color: var(--green);
+}
+
+.push-steps li[data-ok='no'] > span,
+.push-steps li[data-ok='no'] > small {
+  color: var(--red);
+}
+
+.push-steps small {
+  padding-left: 16px;
+  font-size: 11.5px;
+  color: var(--text2);
+}
+
+/* One repo's settings, as a page: its name, then sections under small headings. */
+.cat-list[hidden] {
+  display: none;
+}
+
+.cat-back {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.cat-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cat-form .sect {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sep);
+}
+
+.cat-form .sect h5 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+}
+
+.group {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--side);
+  border: 1px solid var(--sep);
+}
+
+.group h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+}
+
+.group .lede {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.45;
+}
+
+/* A section with two halves (Jenkins: its connection, and its build results), each under a
+   small heading of its own, with space between them and no line: a hairline there read as
+   the line between sections, and Build results looked like a section of its own. */
+.int-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.halves .int-sub + .int-sub {
+  margin-top: 18px;
+}
+
+.int-sub h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.int-sub > .why {
+  margin: 0;
+}
+
+/* The notify token, shown once: read off, copied, put away. */
+.notify-once {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--side);
+}
+
+.notify-once[hidden] {
+  display: none;
+}
+
+.notify-once .why {
+  margin: 0;
+}
+
+.notify-value {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  color: var(--text);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.notify-steps {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text2);
+}
+
+.notify-steps b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.notify-once > .btn {
+  align-self: flex-start;
+}
+
+.group .row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.group .row.between {
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0;
+}
+
+.group .state {
+  font-size: 12.5px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+
+.group .state[data-state='on'] {
+  color: var(--green);
+}
+
+.group .state[data-state='err'] {
+  color: var(--red);
+}
+
+.group .hook,
+.input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13.5px;
+  outline: none;
+}
+
+.group .hook:focus {
+  border-color: var(--accent);
+}
+
+.group code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+/* Segmented control. */
+.seg {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--fill);
+}
+
+.seg button {
+  height: 28px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.seg button[aria-checked='true'] {
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sep);
+}
+
+.switch-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13.5px;
+}
+
+.switch-row small {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.toggle {
+  width: 46px;
+  height: 28px;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill-strong);
+  position: relative;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--knob);
+  box-shadow: var(--shadow-knob);
+  transition: transform 150ms ease;
+}
+
+.toggle[aria-checked='true'] {
+  background: var(--green);
+}
+
+.toggle[aria-checked='true']::after {
+  transform: translateX(18px);
+}
+
+.select {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  color: var(--text);
+  font-size: 13px;
+  max-width: 55%;
+  cursor: pointer;
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* A native select's open list takes its text colour from the select and, where the select's
+   background is translucent like `--fill`, its background from the OS — light text on a
+   white list, which is how every dropdown in Settings read on Windows. The options carry an
+   opaque token pair of their own, on the element so no select can be drawn without it
+   (ui.md). */
+select option,
+select optgroup {
+  background-color: var(--raised);
+  color: var(--text);
+}
+
+select option:checked {
+  background-color: var(--accent);
+  color: var(--accent-text);
+}
+
+select option:disabled {
+  color: var(--text3);
+}
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13.5px;
+  border-top: 1px solid var(--sep);
+}
+
+.kv:first-child {
+  border-top: 0;
+}
+
+/* Storage's sizes, while the `du` behind them runs: the row holds its place and its height. */
+.kv .spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--fill-strong);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+  vertical-align: middle;
+}
+
+/* Storage's last pass is its own box, painted before the sizes under it answer; it still
+   reads as the line after them. */
+.aging-last .kv {
+  border-top: 1px solid var(--sep);
+}
+
+.kv span {
+  color: var(--text2);
+}
+
+/* About this machine: a check's answer, green when chats have what they need, red when not. */
+.kv b {
+  text-align: right;
+}
+
+.kv b.ok {
+  color: var(--green);
+}
+
+.kv b.bad {
+  color: var(--red);
+}
+
+.about-checks {
+  margin-top: 6px;
+  border-top: 1px solid var(--sep);
+}
+
+/* What this machine still lacks: the thing, and under it where it is entered. */
+ul.missing {
+  margin: 6px 0 10px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+ul.missing li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  font-size: 13px;
+}
+
+ul.missing li small {
+  color: var(--text2);
+  font-size: 11.5px;
+}
+
+/* ── Settings › Appearance ─────────────────────────────────────────────────────────────── */
+
+/* The presets as cards, each a thumbnail drawn by its own preset's tokens (`data-preset` on
+   the thumbnail, matched by the token blocks above) and its name under it. */
+.ap-themes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 640px;
+}
+
+.ap-theme {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ap-theme:hover {
+  background: var(--fill);
+}
+
+.ap-theme[aria-checked='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.ap-theme-name small {
+  font-size: inherit;
+  font-weight: 400;
+  color: var(--text2);
+}
+
+.ap-thumb {
+  display: flex;
+  height: 64px;
+  overflow: hidden;
+  border: 1px solid var(--sep);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.ap-thumb i,
+.ap-thumb b {
+  display: block;
+}
+
+.ap-thumb-side {
+  width: 34%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 5px;
+  background: var(--side);
+  border-right: 1px solid var(--sep);
+}
+
+.ap-thumb-side b {
+  height: 5px;
+  border-radius: 2px;
+  background: var(--fill-strong);
+}
+
+.ap-thumb-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+}
+
+.ap-thumb-pane b {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text3);
+}
+
+.ap-thumb-pane b:nth-child(2) {
+  width: 80%;
+}
+
+.ap-thumb-pane b:nth-child(3) {
+  width: 55%;
+}
+
+/* The accent as a short bar: a chosen accent is set on each thumbnail inline (`paintTheme`),
+   otherwise it is the preset's own. */
+.ap-thumb-pane .ap-thumb-accent {
+  width: 32%;
+  background: var(--accent);
+}
+
+.ap-follow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ap-follow input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.ap-follow small {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+/* The accent row: swatches, a hairline, the custom field, Default, the contrast pill. Wraps. */
+.ap-accent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.ap-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* `--swatch` is the swatch's own value, set inline from SWATCHES (appearance.js): data, the one
+   literal colour outside this file's tokens. */
+.ap-swatch {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px var(--sep);
+  cursor: pointer;
+}
+
+.ap-swatch[aria-checked='true'] {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.ap-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--sep);
+}
+
+.ap-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.ap-custom .ap-hex {
+  width: 100px;
+  height: 32px;
+  padding: 0 8px;
+  text-transform: lowercase;
+}
+
+.ap-custom .ap-hex:focus {
+  border-color: var(--accent);
+}
+
+/* Default is lit while no accent is chosen: it is what is in use. */
+.ap-default[aria-pressed='true'] {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.ap-contrast {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ap-contrast[data-tone='ok'] {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+}
+
+.ap-contrast[data-tone='warn'] {
+  color: var(--orange-text);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
+
+.ap-contrast[hidden] {
+  display: none;
+}
+
+.ap-fonts {
+  margin-top: 0;
+}
+
+.ap-fonts .select {
+  min-width: 180px;
+}
+
+/* The preview: a frame and a layout only. Every colour, size and shape inside comes from the
+   page's own rules for `.brand`, `.chats` and `.chat`, `.convo .ctxbar`, `.convo .msg`, `.btn.primary`, `a`
+   and `.wspanel .pill`, so it cannot drift from what it shows. No `data-preset`: it inherits
+   the root's live look. */
+.ap-preview {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  max-width: 760px;
+  overflow: hidden;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius);
+  background: var(--bg);
+  user-select: none;
+}
+
+.ap-pv-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px 0 0;
+  background: var(--side);
+  border-right: 1px solid var(--sep);
+}
+
+.ap-pv-side .brand {
+  flex: none;
+  padding: 2px 18px 4px;
+}
+
+/* The list's own box scrolls and fills; here it is as tall as its three rows. */
+.ap-preview .chats {
+  flex: none;
+  overflow: visible;
+}
+
+/* `.convo` is the conversation's panel, placed over `main` absolutely; here it sits in the grid. */
+.ap-preview .convo {
+  position: relative;
+  inset: auto;
+  min-width: 0;
+}
+
+.ap-preview .convo .log {
+  overflow: visible;
+}
+
+.ap-pv-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+/* The pill's rule is scoped to the details column's `.wspanel`; that class's own layout (a
+   column that fills) is undone here, so only the pill's look comes through. */
+.ap-preview .wspanel {
+  flex: none;
+  display: inline-flex;
+}
+
+.ap-reset {
+  align-items: center;
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .ap-themes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ap-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ap-pv-side {
+    border-right: 0;
+    border-bottom: 1px solid var(--sep);
+  }
+}
+
+@media (pointer: coarse) and (hover: none) {
+  .ap-swatch {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ap-follow {
+    min-height: 44px;
+  }
+
+  .ap-custom .ap-hex,
+  .ap-default,
+  .ap-fonts .select,
+  .ap-reset .btn {
+    height: 44px;
+  }
+}
+
+/* ── toasts and the hint ───────────────────────────────────────────────────────────── */
+
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+  pointer-events: none;
+  max-width: min(520px, calc(100vw - 32px));
+}
+
+.toast {
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: var(--raised);
+  border: 1px solid var(--sep);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  animation: toast-in 180ms ease;
+  word-break: break-word;
+}
+
+.toast.err {
+  border-color: var(--red);
+}
+
+/* A toast with something to press (shell.js `toast`): it takes presses, though the stack does not. */
+.toast.acts {
+  pointer-events: auto;
+}
+
+.toast .do {
+  margin-left: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.toast .links {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.toast .link {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.toast .link:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.toast.leaving {
+  animation: toast-out 240ms ease forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.hint {
+  position: fixed;
+  left: 50%;
+  top: calc(12px + env(safe-area-inset-top));
+  transform: translate(-50%, -8px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--raised);
+  border: 1px solid var(--sep);
+  box-shadow: var(--shadow);
+  font-size: 12.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+  z-index: 50;
+  max-width: min(560px, calc(100vw - 32px));
+  text-align: center;
+}
+
+.hint.on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Faint until pointed at: it floats over text being read, and most reading does not want it. */
+.scrollfoot {
+  position: fixed;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--sep);
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 140ms ease;
+  z-index: 120;
+  animation: toast-in 160ms ease;
+}
+
+.scrollfoot[hidden] {
+  display: none;
+}
+
+.scrollfoot:hover,
+.scrollfoot:focus-visible {
+  opacity: 1;
+}
+
+/* ── boot and login ────────────────────────────────────────────────────────────────── */
+
+.boot,
+.login {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  z-index: 100;
+  transition: opacity 350ms ease;
+}
+
+.boot.gone,
+.login.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.boot .inner,
+.login .inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(320px, calc(100vw - 32px));
+}
+
+.boot h1,
+.login h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.boot .bar {
+  width: 160px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.boot .bar > i {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--accent);
+  animation: sweep 1.1s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.login .inner {
+  align-items: stretch;
+}
+
+.login h1 {
+  text-align: center;
+}
+
+.login .why {
+  margin: -6px 0 4px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 13px;
+}
+
+.login label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text2);
+}
+
+.login input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--side);
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+}
+
+.login input:focus {
+  border-color: var(--accent);
+}
+
+.login .err {
+  margin: 0;
+  color: var(--red);
+  font-size: 13px;
+}
+
+.login .err[hidden] {
+  display: none;
+}
+
+.login .btn.primary {
+  height: 42px;
+  font-size: 15px;
+}
+
+/* ── phone ─────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 760px), (max-height: 500px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Two screens, not two columns: the list, then the chat, with a back button between. */
+  .app[data-view='list'] .main {
+    display: none;
+  }
+
+  .app[data-view='chat'] .side,
+  .app[data-view='settings'] .side {
+    display: none;
+  }
+
+  .side {
+    border-right: 0;
+  }
+
+  .convo header .back,
+  .view-head .back {
+    display: inline-flex;
+  }
+
+  .convo .log {
+    padding: 12px 12px 16px;
+    font-size: 15px;
+  }
+
+  /* No cap: the screen is the column. */
+  .convo .log {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Two lines on a phone: the bar across the screen, the buttons under it at the right. On
+     one line the four buttons left the bar no room and its count was cut to "381…". First
+     written in the short-screen block below, which a tall phone never matches (2026-10-14). */
+  .convo .toolrow {
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    padding: 6px 12px;
+  }
+
+  .convo .ctxbar {
+    flex-basis: 100%;
+    transition: min-height 200ms ease;
+  }
+
+  /* The 8 px of padding, taken back by the margin, is room for a button's touch target inside
+     the clip the fold needs (`overflow: hidden`, which clips at the padding's edge). */
+  .convo .actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-height: 80px;
+    padding-block: 8px;
+    margin-block: -8px;
+    overflow: hidden;
+    transition: max-height 200ms ease;
+  }
+
+  /* Folded on scroll (conversation.js `foldOnScroll`): the title and a 3 px context bar. The
+     action row's height and the bar's are the only things that move; a tap on the folded row
+     unfolds it. Collapsed, the padding is all that is left of the row and the margin cancels it. */
+  .convo[data-collapsed] .actions {
+    max-height: 0;
+    visibility: hidden;
+    transition: max-height 200ms ease, visibility 0s 200ms;
+  }
+
+  .convo[data-collapsed] .ctxbar {
+    min-height: 14px;
+    cursor: pointer;
+  }
+
+  .convo[data-collapsed] .ctxbar .gauge {
+    padding: 0;
+    pointer-events: none;
+  }
+
+  .convo[data-collapsed] .ctxbar .n {
+    display: none;
+  }
+
+  .convo[data-collapsed] .ctxbar .track {
+    height: 3px;
+  }
+
+  .convo[data-collapsed] header .tag.id {
+    display: none;
+  }
+
+  .convo[data-collapsed] header .meta {
+    margin-top: 0;
+  }
+
+  .convo[data-collapsed] header .defines {
+    display: none;
+  }
+
+  .convo .ask .row {
+    flex-direction: column;
+  }
+
+  .convo .ask .btn {
+    min-height: 44px;
+  }
+
+  .convo .composer .btn,
+  .convo .composer textarea {
+    min-height: 40px;
+  }
+
+  .convo .composer .btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Settings on a phone: the list of pages is a screen, and a page is a screen of its own
+     with Back to the list — never the menu beside anything. */
+  .set-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-view[data-set='menu'] .set-pages,
+  .settings-view[data-set='page'] .set-nav {
+    display: none;
+  }
+
+  .set-nav {
+    padding: 8px 0;
+    border-right: 0;
+    gap: 0;
+  }
+
+  .set-link {
+    min-height: 50px;
+    padding: 0 16px;
+    border-radius: 0;
+    border-bottom: 1px solid var(--sep);
+    font-size: 16px;
+  }
+
+  .set-link[aria-current='page'] {
+    background: none;
+    font-weight: 400;
+  }
+
+  .set-link .chev {
+    display: inline;
+  }
+
+  .set-pages {
+    padding: 12px 16px 28px;
+  }
+
+  /* The screen's header carries the page's name on a phone; a second one under it repeats it. */
+  .set-title {
+    display: none;
+  }
+
+  .select {
+    max-width: 50%;
+  }
+
+  .toasts {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+/* The conversation's buttons are drawn at 28 to 40 px and reach a finger's 44 with an invisible
+   pseudo-element, centred and only as far out as needed: `50% - 22px` per side, against the
+   button's own height for top and bottom and its width for the sides, never inwards. */
+@media (pointer: coarse) and (hover: none) {
+  .convo header .btn.icon,
+  .convo .actions .btn,
+  .convo .composer .btn,
+  .convo .strip .halt,
+  .side-foot .ver-reload {
+    position: relative;
+  }
+
+  .convo header .btn.icon::after,
+  .convo .actions .btn::after,
+  .convo .composer .btn::after,
+  .convo .strip .halt::after,
+  .side-foot .ver-reload::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+
+  /* Stop reaches up and out, never down: below the strip is the composer, and a tap meant for
+     Attach must not land on Stop — the reason it left the composer. */
+  .convo .strip .halt::after {
+    bottom: 0;
+  }
+
+  /* The folded row is 28 px drawn: its tap reaches 16 px into the log's top padding. */
+  .convo[data-collapsed] .toolrow {
+    position: relative;
+    z-index: 1;
+  }
+
+  .convo[data-collapsed] .toolrow::after {
+    content: '';
+    position: absolute;
+    inset: 100% 0 -16px;
+  }
+}
+
+/* A phone on its side has the width for a row of answers and no height for a stack of them. */
+@media (max-height: 500px) and (min-width: 600px) {
+  .convo .ask .row {
+    flex-direction: row;
+  }
+}
+
+/* A third of a 400 px screen is most of what the log has left; the prompt still scrolls. */
+@media (max-height: 500px) {
+  .convo .ask .sched-card .p {
+    max-height: 20vh;
+  }
+
+  .convo .ask .sched-card .card-flow {
+    height: 110px;
+  }
+}
+
+/* A short screen — a phone on its side, with the browser's own bars taking a third of it.
+   Everything around the log gives up height so the log has some: the header, action row,
+   strip and composer at their portrait sizes left the conversation three lines tall. */
+@media (max-height: 500px) {
+  /* The title and its tags on one line, the tags clipped rather than wrapped. */
+  .convo header {
+    padding: calc(4px + env(safe-area-inset-top)) 12px 4px 10px;
+  }
+
+  .convo header .text {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .convo header .title {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  /* No room for a second line: the heading says enough. */
+  .convo header .defines {
+    display: none;
+  }
+
+  .convo header .meta {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-top: 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .convo header .tag {
+    flex: none;
+  }
+
+  .convo .toolrow {
+    padding: 4px 12px;
+  }
+
+  .convo .ctxbar {
+    min-height: 28px;
+  }
+
+  /* The strip stays at rest too, smaller: it is the one place the chat's status is shown, since
+     the header no longer carries a status tag. */
+  .convo .strip {
+    min-height: 24px;
+    padding: 2px 12px;
+  }
+
+  .convo .composer {
+    padding: 4px 12px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .convo .composer .btn,
+  .convo .composer textarea {
+    min-height: 34px;
+  }
+
+  .convo .composer .btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .convo .log {
+    padding: 8px 12px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── the details column: Workspace and Activity, one tab at a time ── */
+
+.app[data-right='open'] {
+  grid-template-columns: var(--side-w) minmax(0, 1fr) var(--right-w, 400px);
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--sep);
+  background: var(--side);
+  padding-top: env(safe-area-inset-top);
+}
+
+.right[hidden] {
+  display: none;
+}
+
+/* Workspace above Activity, both showing at once and each folding to its heading (the owner's
+   layout: Workspace is short, and Activity is read from its foot). The close sits over the
+   top heading's right end. */
+.right {
+  position: relative;
+}
+
+/* The sheet's handle, drawn only under 1100 px (the phone block): one template for both. */
+.right-handle {
+  display: none;
+}
+
+.right-handle[hidden] {
+  display: none;
+}
+
+.right-close {
+  position: absolute;
+  top: calc(6px + env(safe-area-inset-top));
+  right: 8px;
+  z-index: 1;
+  background: transparent;
+  color: var(--text2);
+}
+
+.rsec {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rsec[hidden] {
+  display: none;
+}
+
+.rsec:not([hidden]) ~ .rsec:not([hidden]) {
+  border-top: 1px solid var(--sep);
+}
+
+.rsec-head {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 11px 48px 11px 12px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* A section alone in the column is all there is, and does not fold. */
+.rsec-head:disabled {
+  cursor: default;
+}
+
+.rsec-head .chev::before {
+  content: '▾';
+  display: inline-block;
+  width: 12px;
+  color: var(--text2);
+  transition: transform 120ms ease;
+}
+
+.rsec-head:disabled .chev {
+  display: none;
+}
+
+.rsec[data-state='folded'] .chev::before {
+  transform: rotate(-90deg);
+}
+
+.rsec[data-state='folded'] > .wspanel,
+.rsec[data-state='folded'] > .actpanel,
+.rsec[data-state='folded'] > .filespanel,
+.rsec[data-state='folded'] > .runpanel {
+  display: none;
+}
+
+/* The height: an open Workspace is as tall as it needs, up to half the column, and an open
+   Activity takes the rest; with Activity folded, Workspace takes it all. Files is a heading with
+   no body under them, and the whole column in its mode (`data-fill='files'`, ui-details.md). */
+.rsec[data-state='open'] {
+  flex: 0 1 auto;
+}
+
+.right[data-fill='activity'] .rsec[data-sec='activity'][data-state='open'],
+.right[data-fill='workspace'] .rsec[data-sec='workspace'][data-state='open'],
+.right[data-fill='files'] .rsec[data-sec='files'][data-state='open'],
+.right[data-fill='run'] .rsec[data-sec='run'][data-state='open'] {
+  flex: 1 1 0;
+}
+
+.right[data-fill='activity'] .rsec[data-sec='workspace'][data-state='open'] {
+  max-height: 50%;
+}
+
+.wspanel,
+.actpanel,
+.filespanel,
+.runpanel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Files mode's header, in place of the three headings on a wide screen only (the block below):
+   the back link, the mode's name as a chip, Expand while a file is open; the column's close sits
+   over its right end as over the top heading. */
+.rmode {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: 44px;
+  padding: 0 48px 0 8px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.rmode-back,
+.fmode-back {
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  background: transparent;
+  color: var(--text2);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.rmode-back:hover,
+.fmode-back:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.rmode-name,
+.fmode-name {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--fill-strong);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.rmode .btn,
+.fmode .btn {
+  color: var(--text2);
+}
+
+/* Files mode on a wide screen: the mode header alone on top, the three sections' headings gone
+   (Workspace and Activity hidden, not folded), and Files in two panes — the list pane 220 px at
+   the left, scrolling on its own, the viewer beside it; with no file open the list pane takes
+   the column's width. The sheet keeps its stack (ui-details.md Hard rules). */
+@media (min-width: 1100px) {
+  .rmode {
+    display: flex;
+  }
+
+  .rmode[hidden] {
+    display: none;
+  }
+
+  .right[data-mode='files'] .rsec[data-sec='workspace'],
+  .right[data-mode='files'] .rsec[data-sec='activity'],
+  .right[data-mode='files'] .rsec[data-sec='files'] > .rsec-head {
+    display: none;
+  }
+
+  .right[data-mode='files'] .rsec[data-sec='files'] {
+    border-top: 0;
+  }
+
+  .right[data-mode='files'] .filespanel {
+    flex-direction: row;
+  }
+
+  .right[data-mode='files'] .filespanel[data-viewing] > .fside {
+    flex: 0 0 220px;
+    border-right: 1px solid var(--sep);
+  }
+}
+
+/* The grip on the column's left edge, the chat list's grip mirrored. */
+.right-grip {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .app[data-right='open'] .right-grip {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(var(--right-w, 400px) - 3px);
+    width: 6px;
+    cursor: col-resize;
+    z-index: 30;
+    touch-action: none;
+  }
+
+  .right-grip:hover,
+  .right-grip:focus-visible,
+  .app.resizing .right-grip {
+    background: var(--accent);
+    opacity: 0.5;
+    outline: none;
+  }
+}
+
+.wspanel .body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* The workspace's name, its short id beside it, muted. */
+.wspanel .name {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-bottom: 2px;
+}
+
+.wspanel .name .mono {
+  font-size: 11.5px;
+  color: var(--text3);
+}
+
+.wspanel .label,
+.modal .label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  margin-top: 8px;
+}
+
+/* A checkout's card: the repo, its branch as a chip and where it came from, then pills. */
+.wspanel .checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+}
+
+.wspanel .checkout .row.wrap {
+  gap: 4px 8px;
+}
+
+.wspanel .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: var(--fill-strong);
+  font-size: 11.5px;
+}
+
+.wspanel .pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.wspanel .pill {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.wspanel .pill[data-tone='ok'] {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+}
+
+.wspanel .pill[data-tone='warn'] {
+  color: var(--orange-text);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
+
+/* Build, Port and Ages: one line each, a dot, the label in a fixed column, then the value, so
+   the three read down one edge. The dot's colour is the line's state. */
+.wspanel .line {
+  display: grid;
+  grid-template-columns: 7px 44px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 8px;
+  font-size: 12.5px;
+}
+
+.wspanel .line .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  align-self: start;
+  margin-top: 6px;
+  background: var(--grey);
+}
+
+.wspanel .line[data-tone='ok'] .dot {
+  background: var(--green);
+}
+
+.wspanel .line[data-tone='warn'] .dot {
+  background: var(--orange);
+}
+
+.wspanel .line[data-tone='bad'] .dot {
+  background: var(--red);
+}
+
+.wspanel .line[data-tone='busy'] .dot {
+  background: var(--accent);
+}
+
+.wspanel .line .key {
+  color: var(--text3);
+  font-size: 11.5px;
+}
+
+.wspanel .line .val {
+  min-width: 0;
+}
+
+/* A Jenkins build: the job and number, in grey what it is doing, where from and when, and the
+   commit's first line cut to one, the whole of it on hover. */
+.wspanel .build .val {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.wspanel .build .head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.wspanel .build .subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text2);
+  font-size: 12px;
+}
+
+.wspanel .more {
+  align-self: flex-start;
+}
+
+.wspanel .build a {
+  color: var(--text);
+}
+
+/* Declared ports (launchers.md): dimmed until something is listening. */
+.wspanel .port.idle .val {
+  color: var(--text3);
+}
+
+.wspanel .port-repo {
+  margin-top: 4px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+/* Session: the key in a fixed 90 px column, the value beside it. */
+.wspanel .kvgrid {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 5px 8px;
+  font-size: 12.5px;
+}
+
+.wspanel .kvgrid .k {
+  color: var(--text2);
+}
+
+.wspanel .kvgrid .v {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wspanel .kvgrid .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.wspanel .kvgrid .ws-runs {
+  display: block;
+}
+
+.wspanel .state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--fill);
+  font-size: 12.5px;
+}
+
+.wspanel .state.failed {
+  color: var(--red);
+}
+
+.wspanel .state .grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.wspanel .spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--fill-strong);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+  flex: none;
+}
+
+.wspanel .row.wrap,
+.runpanel .row.wrap {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wspanel .actions {
+  margin-top: 8px;
+}
+
+.wspanel .log {
+  margin: 4px 0 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--code);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.btn.sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+/* The details column's buttons are small on a mouse and a finger's height on a touch screen. */
+@media (pointer: coarse) and (hover: none) {
+  .wspanel .btn.sm {
+    height: auto;
+    min-height: 44px;
+  }
+
+  /* Files: every row and control a finger can hit, at 44 px. Rows and the select grow to it; an
+     icon button and a segment stay drawn small and reach it with an invisible margin. */
+  .frow,
+  .brow,
+  .btoggle,
+  .bign,
+  .fview .fversion,
+  .fcard .btn.sm,
+  .fnote .btn.sm {
+    min-height: 44px;
+  }
+
+  .fview .btn.icon.sm,
+  .ftools .seg button {
+    position: relative;
+  }
+
+  .fview .btn.icon.sm::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+
+  .ftools .seg button::after {
+    content: '';
+    position: absolute;
+    inset: -9px 0;
+  }
+}
+
+.why {
+  font-size: 11.5px;
+  color: var(--text2);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row.between {
+  justify-content: space-between;
+}
+
+/* A workspace with no session yet is the whole main pane. */
+.app.ws-only .main {
+  display: none;
+}
+
+.app.ws-only .right {
+  border-left: 0;
+}
+
+.app.ws-only .right-grip {
+  display: none;
+}
+
+.app.ws-only[data-right='open'] {
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
+}
+
+.convo header .btn.ws {
+  background: transparent;
+  color: var(--text2);
+}
+
+.convo header .btn.ws[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+/* ── the New chat dialog ───────────────────────────────────────────────────────────── */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--scrim);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+/* `min-width: 0`: as a flex item the sheet was as wide as its widest unbreakable word, and an
+   SSH remote (`git@github.com:…`) has no break, so on a phone the dialog ran off the right. */
+.modal .sheet {
+  width: min(720px, 100%);
+  min-width: 0;
+  max-height: calc(100% - 32px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--raised);
+  border: 1px solid var(--sep);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.modal header,
+.modal footer {
+  padding: 14px 18px;
+  flex: none;
+}
+
+.modal header {
+  border-bottom: 1px solid var(--sep);
+}
+
+.modal footer {
+  border-top: 1px solid var(--sep);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modal h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.modal .body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal textarea,
+.modal .input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--sep);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+}
+
+.modal textarea:focus,
+.modal .input:focus {
+  border-color: var(--accent);
+}
+
+.modal .row {
+  flex-wrap: wrap;
+}
+
+.modal .sub,
+.group .sub {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text2);
+  min-width: 0;
+}
+
+.modal .sub .select,
+.group .sub .select {
+  max-width: none;
+}
+
+/* New chat's repos scroll in a box that shows five and a half of them, on a phone too: the
+   cut-off one says there are more. A repo is 38px and the gap 6px. */
+.modal .repos {
+  --repo-pitch: 44px;
+  max-height: calc(5.5 * var(--repo-pitch) - 6px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal .repo > label.row {
+  min-height: 22px;
+}
+
+.modal .repo {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--fill);
+}
+
+.modal .repo + .repo {
+  margin-top: 6px;
+}
+
+.modal .repo label.row b {
+  font-size: 14px;
+}
+
+.modal .repo input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+
+/* ── the catalogue editor ──────────────────────────────────────────────────────────── */
+
+.cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cat-row:hover {
+  background: var(--fill-strong);
+}
+
+.cat-row .who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cat-row .who small {
+  font-size: 11.5px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sep);
+}
+
+.cat-form[hidden] {
+  display: none;
+}
+
+.cat-form .row {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-top: 0;
+}
+
+.cat-form .sub.grow {
+  flex: 1 1 220px;
+}
+
+.cat-form textarea.input {
+  height: auto;
+  padding: 8px 12px;
+  resize: vertical;
+}
+
+.group .input.mono,
+.modal .input.mono {
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+
+@media (max-width: 1099px) {
+  /* Under a wide screen the details column is a sheet over the chat. */
+  .app[data-right='open'] {
+    grid-template-columns: var(--side-w) minmax(0, 1fr);
+  }
+
+  .right {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 80vh;
+    border-left: 0;
+    border-top: 1px solid var(--sep);
+    border-radius: 18px 18px 0 0;
+    box-shadow: var(--shadow);
+    z-index: 40;
+    transition: transform 0.15s ease;
+  }
+
+  /* Following a finger on the handle: no easing behind it. */
+  .right.dragging {
+    transition: none;
+  }
+
+  /* A short bar at the sheet's top says it is a sheet; swiped down, it closes it (`_wireHandle`). */
+  .right-handle {
+    display: flex;
+    flex: none;
+    justify-content: center;
+    align-items: center;
+    height: 20px;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .right-handle[hidden] {
+    display: none;
+  }
+
+  .right-handle span {
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--sep);
+  }
+
+  /* The close sits over the top heading, under the handle. */
+  .right-close {
+    top: calc(26px + env(safe-area-inset-top));
+  }
+
+  /* The keyboard is up (`fitKeyboard`): the sheet sits on it. A fixed box's containing block is
+     the layout viewport, which the keyboard does not shrink, so 100% less the visible height is
+     the keyboard. Its cap follows what is left — a cap still, never a height (ui-details.md). */
+  html[data-kb] .app:not(.ws-only) .right {
+    bottom: calc(100% - var(--kb-h));
+    max-height: calc(var(--kb-h) * 0.8);
+  }
+
+  /* The sheet has no height of its own — it is as tall as what it holds, up to the cap — so
+     the column's shares do not work in it: a basis of zero is zero, and Activity sat at no
+     height under the foot of the screen, heading and all; half of no height is no cap either.
+     Here the filling section starts from its content, and Workspace keeps its size up to
+     half the sheet. */
+  .right[data-fill='activity'] .rsec[data-sec='activity'][data-state='open'],
+  .right[data-fill='workspace'] .rsec[data-sec='workspace'][data-state='open'],
+  .right[data-fill='run'] .rsec[data-sec='run'][data-state='open'] {
+    flex: 1 1 auto;
+  }
+
+  .right[data-fill='activity'] .rsec[data-sec='workspace'][data-state='open'] {
+    flex-shrink: 0;
+    max-height: 40vh;
+  }
+
+  /* Files in the sheet, the same way: a list to a third of the screen, and in its mode the
+     sheet is Files — the viewer alone, or with no file open the list (Browse is never built
+     here) — from its content up to the cap, under Workspace and Activity drawn folded by
+     `setRight`. No mode header and no Expand: the sheet already is the file over the chat. */
+  .right[data-fill='files'] .rsec[data-sec='files'][data-state='open'] {
+    flex: 1 1 auto;
+  }
+
+  .right:not([data-fill='files']) .rsec[data-sec='files'][data-state='open'] {
+    max-height: 35vh;
+  }
+
+  .filespanel[data-viewing] > .fside {
+    display: none;
+  }
+
+  /* A list row is a finger's height: the name over its folder in grey mono, the time at the right. */
+  .frow {
+    min-height: 44px;
+    align-content: center;
+  }
+
+  /* The viewer's header is Back, the name, the version and Copy; the folder is in the name's
+     title. The segmented control is the row under it. */
+  .fview .fpath small {
+    display: none;
+  }
+
+  /* The HTML preview takes the sheet's body: a frame has no height of its own and the sheet's is
+     its content's, so the frame asks for the whole cap and shrinks to what the header leaves —
+     with the keyboard up too, where the cap is smaller (ui-details.md). */
+  .fbody.fframe {
+    flex-basis: auto;
+  }
+
+  .fhtml {
+    flex: 1 1 auto;
+    height: 80vh;
+  }
+
+  /* Markdown at the page's measure, 16 px from each edge with the body's own 12. */
+  .filespanel .fbody .doc {
+    max-width: var(--measure);
+    margin-inline: auto;
+    padding-inline: 4px;
+  }
+
+  /* A folded heading is never squeezed out by the section above it. */
+  .rsec[data-state='folded'] {
+    flex: none;
+  }
+
+  .app.ws-only .right {
+    position: absolute;
+    inset: 0;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* A workspace with no session is the whole pane, not a sheet: no handle to swipe. */
+  .app.ws-only .right-handle {
+    display: none;
+  }
+
+  .app.ws-only .right-close {
+    top: calc(6px + env(safe-area-inset-top));
+  }
+
+  .app.ws-only[data-right='open'] {
+    grid-template-columns: var(--side-w) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .app.ws-only .right {
+    left: 0;
+  }
+
+  .app.ws-only[data-right='open'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app.ws-only .side {
+    display: none;
+  }
+
+  .modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal .sheet {
+    max-height: 92%;
+    border-radius: 18px 18px 0 0;
+  }
+}
+
+/* ── secrets, environments, data sources ───────────────────────────────────────────── */
+
+.secret,
+.env-row {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--fill);
+}
+
+.secret + .secret,
+.env-host + .env-host {
+  margin-top: 6px;
+}
+
+/* A host's public key opens under its own row, inside the same box. The box is the host's,
+   not the row's: each drawing its own, pulled together, left the row's rounded corners
+   overlapping the key's top edge (the owner's screenshot, 2026-10-04). */
+.env-host {
+  border-radius: 10px;
+  background: var(--fill);
+}
+
+.env-host .env-row {
+  background: none;
+}
+
+.env-host .env-pub {
+  padding: 0 10px 10px;
+}
+
+.env-form-title {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.secret .who,
+.env-row .who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.secret small,
+.env-row small {
+  font-size: 11.5px;
+  color: var(--text2);
+}
+
+.env-row .ok {
+  color: var(--green);
+}
+
+.env-row .bad {
+  color: var(--red);
+}
+
+.pubkey {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--code);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: all;
+}
+
+.group textarea.input[hidden],
+.group .row[hidden] {
+  display: none;
+}
+
+/* How to make an integration's token: closed until wanted, in the section that takes it. */
+.howto {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.howto summary {
+  cursor: pointer;
+  color: var(--accent);
+  width: fit-content;
+}
+
+.howto ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+
+.howto li + li {
+  margin-top: 6px;
+}
+
+.howto b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.howto p {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+/* A snippet to copy into a Jenkinsfile: kept as written, scrolled rather than wrapped. */
+.howto pre {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  color: var(--text);
+  font-size: 11.5px;
+  line-height: 1.45;
+  overflow-x: auto;
+}
+
+/* Room to read: headed columns, a row's height of space, the access level in the text colour
+   — it is the column somebody copies from. It was tight enough to be hard to read. */
+.howto table {
+  margin: 10px 0 4px;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.howto th {
+  padding: 0 24px 6px 0;
+  border-bottom: 1px solid var(--sep);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  text-align: left;
+}
+
+.howto td {
+  padding: 9px 24px 9px 0;
+  border-bottom: 1px solid var(--sep);
+  vertical-align: top;
+}
+
+.howto td:first-child,
+.howto td:nth-child(2) {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.howto td:first-child {
+  font-weight: 600;
+}
+
+/* The token and the Jenkins address take the row; a field sized to its placeholder was a
+   third of the width it needed. */
+.int-form .sub.grow {
+  flex: 1 1 280px;
+}
+
+/* A host's pasted private key, under its form; and the public half of a key made for it. */
+.env-form textarea.input {
+  height: auto;
+  margin-top: 10px;
+  padding: 8px 12px;
+  resize: vertical;
+}
+
+.group .row .input {
+  width: auto;
+  flex: 1 1 160px;
+}
+
+/* Inside a .sub label the flex axis is vertical, so the row's 160px basis
+   above would become the input's height. */
+.group .row .sub .input {
+  width: 100%;
+  flex: none;
+}
+
+.data-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.data-row {
+  flex-wrap: wrap;
+}
+
+.data-row .select {
+  max-width: none;
+}
+
+.data-row .input {
+  flex: 1 1 140px;
+  width: auto;
+}
+
+.btn.icon.sm {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.btn.icon.sm svg {
+  width: 14px;
+  height: 14px;
+}
+
+.login .why code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+/* ── Settings › Workspaces' rows ──────────────────────────────────────────────────── */
+
+.stranded-row {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--fill);
+}
+
+/* A gap on the list, not a margin on the row: `.group .row.between` zeroes a row's margin-top
+   and outweighs a sibling rule, which drew the rows as one block. */
+.group .ws-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stranded-row .who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* What a workspace holds, commit by commit and file by file, under its row. A path can be long. */
+.stranded-row .ws-held {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--sep);
+  overflow-wrap: anywhere;
+}
+
+.stranded-row .ws-held:empty {
+  display: none;
+}
+
+.stranded-row small {
+  font-size: 11.5px;
+  color: var(--text2);
+}
+
+/* ── search hits from the index ────────────────────────────────────────────────────── */
+
+.found {
+  flex: none;
+  max-height: 40%;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+  border-top: 1px solid var(--sep);
+}
+
+.found[hidden] {
+  display: none;
+}
+
+.found .hit {
+  padding: 7px 10px;
+  border-radius: 8px;
+}
+
+.found .hit .t {
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.found .kind {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--fill-strong);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+}
+
+.found .s {
+  font-size: 11.5px;
+  color: var(--text2);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.found mark {
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.cat-form .tool-note {
+  font-size: 11.5px;
+  color: var(--text3);
+}
+
+.cat-form input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* A repo page's lists — tools, jobs, hosts — are one item a line, aligned left. They carried
+   the form's `.row`, whose `align-items: flex-end` pushed every line in a vertical list to
+   the right edge, ragged (the owner's screenshot, 2026-10-04). */
+.cat-jobs,
+.cat-hosts,
+.data-sets,
+.var-rows {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.cat-form label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* A job: its own box and name on the left, whether its failure starts a chat on the right. */
+.cat-jobs .job-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--sep);
+}
+
+.cat-jobs .job-row:last-child {
+  border-bottom: 0;
+}
+
+.cat-jobs .job-fail {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.cat-form .sect[hidden] {
+  display: none;
+}
+
+.cat-form .sect code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+/* An Environment row: name, value, and whether it is secret or locked. */
+.var-rows .var-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.var-rows .var-row .check {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+/* A dataset: its name and what the repo says of it, then where it comes from here. */
+.data-sets .dataset {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+}
+
+.data-sets .dataset .head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+/* The answer being written: the same shape as a finished one, a little quieter. */
+.convo .msg.partial .body {
+  opacity: 0.85;
+}
+
+/* Sent but not in the transcript yet: your message, dimmed, with a spinner where its time goes. */
+.convo .msg.queued .body {
+  opacity: 0.55;
+}
+
+.convo .msg.queued .when {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.convo .msg.queued .spin {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--fill-strong);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+}
+
+.convo .msg.partial .when::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* ── the agent map: the session on the left, its subagents on the right ─────────────── */
+
+.agentmap .sheet {
+  width: min(960px, 100%);
+  height: min(720px, calc(100% - 32px));
+}
+
+.agentmap header .sub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.agentmap header .row {
+  gap: 10px;
+  min-width: 0;
+}
+
+.agentmap .map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1.4fr);
+  align-items: center;
+  gap: 0;
+}
+
+.agentmap .map .parent {
+  grid-column: 1;
+}
+
+.agentmap .map .agents {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  padding-left: 14px;
+  border-left: 1px solid var(--sep);
+}
+
+.agentmap .map .agents::before {
+  /* The trunk from the parent to the list. */
+  content: '';
+  position: absolute;
+  left: -29px;
+  top: 50%;
+  width: 28px;
+  border-top: 1px solid var(--sep);
+}
+
+.agentmap .card {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  border: 1px solid var(--sep);
+  border-radius: 12px;
+  background: var(--fill);
+  padding: 10px 12px 10px 28px;
+  color: var(--text);
+  font: inherit;
+}
+
+.agentmap .agent.card {
+  cursor: pointer;
+}
+
+.agentmap .agent.card:hover {
+  background: var(--fill-strong);
+}
+
+.agentmap .card .dot {
+  position: absolute;
+  left: 12px;
+  top: 16px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text3);
+}
+
+.agentmap .card.live .dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.agentmap .card .t {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agentmap .card .s {
+  font-size: 11.5px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.agentmap .nothing {
+  color: var(--text3);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* An agent's own conversation: the thread's log, smaller, read-only. */
+.agentmap .alog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.agentmap .msg .when {
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.agentmap .msg.user {
+  align-self: flex-start;
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.agentmap .msg.user .when {
+  padding-left: 4px;
+}
+
+.agentmap .msg.user .body {
+  padding: 8px 14px;
+  border-radius: 16px;
+  border-bottom-left-radius: 5px;
+  background: var(--fill-strong);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.agentmap .msg.assistant .body > :first-child {
+  margin-top: 0;
+}
+
+.agentmap .msg.assistant .body > :last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .agentmap .map {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agentmap .map .parent,
+  .agentmap .map .agents {
+    grid-column: 1;
+  }
+
+  .agentmap .map .agents {
+    margin-top: 12px;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .agentmap .map .agents::before {
+    display: none;
+  }
+}
+
+/* ── the commands map: the agent map's cards, a list on the left and the picked one beside it ── */
+
+.cmdmap .cmap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 16px;
+  align-items: start;
+  height: 100%;
+}
+
+.cmdmap .cmds {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmdmap .card {
+  cursor: pointer;
+}
+
+.cmdmap .card:hover,
+.cmdmap .card.picked {
+  background: var(--fill-strong);
+}
+
+.cmdmap .card.picked {
+  border-color: var(--accent);
+}
+
+.cmdmap .card.failed .dot {
+  background: var(--red);
+}
+
+.cmdmap .detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  position: sticky;
+  top: 0;
+}
+
+.cmdmap .detail .meta {
+  font-size: 12.5px;
+  color: var(--text3);
+}
+
+.cmdmap .detail .meta.running {
+  color: var(--accent);
+}
+
+.cmdmap .detail .meta.failed {
+  color: var(--red);
+}
+
+.cmdmap .detail .btn {
+  padding: 2px 10px;
+  font-size: 11.5px;
+}
+
+.cmdmap .detail .label {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.cmdmap .detail pre {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--sep);
+  border-radius: 8px;
+  background: var(--fill);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cmdmap .detail pre.out {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .cmdmap .cmap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cmdmap .detail {
+    position: static;
+  }
+
+  .cmdmap .detail pre.out {
+    max-height: 260px;
+  }
+}
+
+/* ── a routine's page (routine-page.js, flow.js) ───────────────────────────────────── */
+
+/* In the main pane's place as the conversation is: absolutely placed over it. */
+.routine-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.routine-view[hidden] {
+  display: none;
+}
+
+.rv-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 10px 16px;
+  border-bottom: 1px solid var(--sep);
+  flex: none;
+  background: var(--bg);
+}
+
+.rv-head .back {
+  display: none;
+  background: transparent;
+  color: var(--accent);
+}
+
+.rv-head .text {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.rv-head .title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rv-head .tag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 500;
+  vertical-align: 2px;
+}
+
+.rv-head .meta {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text2);
+  overflow-wrap: anywhere;
+}
+
+.rv-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rv-actions .run-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 4px;
+}
+
+.rv-actions .skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rv-actions .skip[hidden] {
+  display: none;
+}
+
+.rv-actions .skip input {
+  accent-color: var(--accent);
+}
+
+/* The header's ⋯ and its menu: Delete lives here, out of the row Run now and Pause are in. */
+.rv-more {
+  position: relative;
+  display: inline-flex;
+}
+
+.rv-more .menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  border: 1px solid var(--sep);
+  border-radius: 10px;
+  background: var(--raised);
+  box-shadow: var(--shadow);
+}
+
+.rv-more .menu[hidden] {
+  display: none;
+}
+
+.rv-more .menu button {
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rv-more .menu button:hover {
+  background: var(--fill);
+}
+
+.rv-more .menu button.danger {
+  color: var(--red);
+}
+
+/* Delete's confirm: a small sheet in the New chat dialog's shape, the verb red-tinted, since it
+   cannot be taken back (as the conversation's confirm bar is). */
+.rv-confirm .sheet {
+  width: min(440px, 100%);
+}
+
+.rv-confirm .why {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.rv-confirm footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rv-confirm .btn.danger {
+  background: color-mix(in srgb, var(--red) 16%, var(--raised));
+  font-weight: 600;
+}
+
+@media (pointer: coarse) and (hover: none) {
+  .rv-more .menu button {
+    height: 44px;
+  }
+}
+
+/* A routine's call triggers: a row each under the header, and the token's one showing. */
+.rv-calls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rv-calls[hidden] {
+  display: none;
+}
+
+.rv-calls .call {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  color: var(--text2);
+}
+
+.rv-calls .call b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.rv-calls .url {
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  color: var(--text);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.rv-calls .state[data-state='on'] {
+  color: var(--green);
+}
+
+/* The notify token's box in Settings, the same shape: read off, copied, put away. */
+.call-once {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: var(--side);
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.call-once[hidden] {
+  display: none;
+}
+
+.call-once .why {
+  margin: 0;
+}
+
+.call-once .why b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.call-once .sub {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+.call-once .row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.call-value,
+.call-curl {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  color: var(--text);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.call-once > .btn {
+  align-self: flex-start;
+}
+
+.rv-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rv-flow {
+  flex: 1;
+  min-height: 160px;
+  position: relative;
+}
+
+/* The canvas: drag to pan, wheel or pinch to zoom (flow.js). A dot grid says it moves. */
+.flow-canvas {
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background-image: radial-gradient(var(--fill-strong) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.flow-canvas.drag {
+  cursor: grabbing;
+}
+
+.flow-canvas .flow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+/* Its own layer only while it moves (flow.js `_paint`): a frame then moves a picture instead of
+   repainting the canvas and its dot grid. Left on, the boxes would stay blurred at the zoom the
+   layer was made at. */
+.flow-canvas.moving .flow {
+  will-change: transform;
+}
+
+/* The hidden copy a box is measured in (flow.js `_measurer`). */
+.flow-canvas .flow-probe {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.flow-canvas svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.flow .edge {
+  fill: none;
+  stroke: var(--text3);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Under each line, a gap in the canvas's colour: where two cross, the later cuts the one
+   beneath, so each reads through the crossing (the owner's, 2026-10-15). */
+.flow .case {
+  fill: none;
+  stroke: var(--bg);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+/* What a Shift-drag lined the box up with: a dashed line through both centres. */
+.flow .guide {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  border: 0 dashed var(--accent);
+}
+
+.flow .guide[data-axis='h'] {
+  height: 0;
+  border-top-width: 1px;
+}
+
+.flow .guide[data-axis='v'] {
+  width: 0;
+  border-left-width: 1px;
+}
+
+.flow .guide[hidden] {
+  display: none;
+}
+
+/* The arrowhead at an edge's end: its own shape, tagged with the edge, so a run's path colours
+   it as it colours the line. */
+.flow .head {
+  fill: var(--text3);
+}
+
+/* A label sits on the line, haloed in the page's colour so the line does not strike it. */
+.flow .lbl {
+  fill: var(--text2);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+/* As tall as its text, with the same room on every side (flow.js measures it). */
+.flow .node {
+  position: absolute;
+  padding: 10px;
+  border: 1px solid var(--sep);
+  border-radius: 10px;
+  background: var(--raised);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  transition: opacity 150ms ease;
+}
+
+/* On a routine's page a box is dragged where the person wants it (flow.js `edit`): it says so
+   with the hand, and the one in hand rides over the rest with a deeper shadow. */
+.flow-canvas.editable .flow .node {
+  cursor: grab;
+}
+
+.flow-canvas.box-drag,
+.flow-canvas.editable .flow .node.dragging {
+  cursor: grabbing;
+}
+
+.flow .node.dragging {
+  z-index: 1;
+  box-shadow: var(--shadow);
+}
+
+.flow .node.end {
+  border-radius: 16px;
+}
+
+.flow .node.gate {
+  border-style: dashed;
+}
+
+.flow .node .k {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+}
+
+.flow .node .v {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.flow .node .m {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text2);
+}
+
+/* A run drawn on it: what it did not reach fades, and its path takes the run's colour — green
+   for done or nothing, orange for needs you, red for failed, the accent while running. */
+.flow.pathed .node:not(.taken),
+.flow.pathed .edge:not(.taken),
+.flow.pathed .head:not(.taken),
+.flow.pathed .lbl:not(.taken) {
+  opacity: 0.4;
+}
+
+.flow.pathed .edge.taken {
+  stroke-width: 2.5;
+}
+
+.flow.pathed .lbl.taken {
+  fill: var(--text);
+}
+
+.flow.pathed .node.taken {
+  border-style: solid;
+}
+
+.flow[data-tone='ok'] .node.taken {
+  border-color: var(--green);
+}
+
+.flow[data-tone='ok'] .edge.taken {
+  stroke: var(--green);
+}
+
+.flow[data-tone='ok'] .head.taken {
+  fill: var(--green);
+}
+
+.flow[data-tone='warn'] .node.taken {
+  border-color: var(--orange);
+}
+
+.flow[data-tone='warn'] .edge.taken {
+  stroke: var(--orange);
+}
+
+.flow[data-tone='warn'] .head.taken {
+  fill: var(--orange);
+}
+
+.flow[data-tone='bad'] .node.taken {
+  border-color: var(--red);
+}
+
+.flow[data-tone='bad'] .edge.taken {
+  stroke: var(--red);
+}
+
+.flow[data-tone='bad'] .head.taken {
+  fill: var(--red);
+}
+
+.flow[data-tone='run'] .node.taken {
+  border-color: var(--accent);
+}
+
+.flow[data-tone='run'] .edge.taken {
+  stroke: var(--accent);
+}
+
+.flow[data-tone='run'] .head.taken {
+  fill: var(--accent);
+}
+
+/* A step that failed is red whatever the run's colour. */
+.flow .node.taken[data-status='failed'] {
+  border-color: var(--red);
+}
+
+/* The box a failed run failed in (`pathOf`'s `failed`): the step, or the trigger when it never
+   started — filled red as well as edged, so it reads apart from the red path leading to it. */
+.flow.pathed .node.failed {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 16%, var(--raised));
+}
+
+.flow-note {
+  position: absolute;
+  left: 12px;
+  bottom: 16px;
+  font-size: 12px;
+  color: var(--text2);
+  pointer-events: none;
+}
+
+.flow-zoom {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--sep);
+  border-radius: 9px;
+  background: var(--raised);
+  box-shadow: var(--shadow-sm);
+  cursor: default;
+}
+
+.flow-zoom button {
+  min-width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.flow-zoom button:hover {
+  background: var(--fill);
+}
+
+.flow-zoom .pct {
+  width: 40px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The runs, newest first, as a strip under the flow. */
+.rv-runs {
+  flex: none;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--sep);
+}
+
+.rv-runs .h {
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+.rv-runs .strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.rv-runs .nothing {
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.rv-runs .run {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  max-width: 260px;
+  padding: 7px 12px;
+  border: 1px solid var(--sep);
+  border-radius: 9px;
+  background: var(--side);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rv-runs .run:hover {
+  background: var(--fill);
+}
+
+.rv-runs .run[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.rv-runs .run .w {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.rv-runs .run .dot {
+  margin: 0;
+}
+
+.rv-runs .run .x {
+  font-size: 11px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A failed run, red so the strip shows which one broke; chosen, the accent's edge still says
+   which run the flow shows. */
+.rv-runs .run.failed {
+  border-color: color-mix(in srgb, var(--red) 55%, var(--sep));
+  background: color-mix(in srgb, var(--red) 9%, var(--side));
+}
+
+.rv-runs .run.failed:hover {
+  background: color-mix(in srgb, var(--red) 15%, var(--side));
+}
+
+.rv-runs .run.failed[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+
+.rv-runs .run .f {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--red);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── the details column for a routine: the chosen run (RunPanel, ui-details.md) ───── */
+
+.runpanel .body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.runpanel .nothing {
+  color: var(--text2);
+  font-size: 12.5px;
+}
+
+.runpanel .label {
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+.runpanel .rp-head .t {
+  font-weight: 600;
+}
+
+.runpanel .rp-head .x {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.runpanel .rp-summary {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.runpanel .rp-summary b {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.runpanel .rp-summary[data-tone='ok'] b {
+  color: var(--green);
+}
+
+.runpanel .rp-summary[data-tone='warn'] b {
+  color: var(--orange-text);
+}
+
+.runpanel .rp-summary[data-tone='bad'] b {
+  color: var(--red);
+}
+
+.runpanel .rp-summary[data-tone='run'] b {
+  color: var(--accent);
+}
+
+.runpanel .rp-summary ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  white-space: normal;
+}
+
+.runpanel code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--fill);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.runpanel .ev {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--sep);
+  font-size: 12px;
+}
+
+.runpanel .ev .tm {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.runpanel .ev .wh {
+  color: var(--text2);
+  overflow-wrap: anywhere;
+}
+
+.runpanel .ev .wh b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* The summary's numbers and, for a failed run, where it failed. */
+.runpanel .rp-summary .facts {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+.runpanel .rp-summary .failed {
+  margin-bottom: 4px;
+  color: var(--red);
+  font-weight: 500;
+}
+
+/* The log by step: each group a folded header in the shape of the chat's "N steps" marker
+   (conversation.js `toggleSteps`), opening its lines under it behind a rule on the left. */
+.runpanel .rp-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.runpanel .rp-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--sep);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.runpanel .rp-group:hover {
+  background: var(--fill);
+}
+
+.runpanel .rp-group::after {
+  content: '›';
+  color: var(--text3);
+}
+
+.runpanel .rp-group[aria-expanded='true']::after {
+  content: '⌄';
+}
+
+/* Before and After: the run's own events, quieter than a step. */
+.runpanel .rp-group.small {
+  align-self: flex-start;
+  width: auto;
+  min-height: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: var(--text2);
+  font-size: 11.5px;
+}
+
+.runpanel .rp-group .g-t {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runpanel .rp-group.small .g-t {
+  flex: none;
+  font-weight: 400;
+}
+
+.runpanel .rp-group .g-o,
+.runpanel .rp-group .g-d,
+.runpanel .rp-group .g-n {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+.runpanel .rp-group .g-n {
+  color: var(--text3);
+}
+
+.runpanel .rp-group[data-tone='ok'] .g-o {
+  color: var(--green);
+}
+
+.runpanel .rp-group[data-tone='bad'] {
+  border-color: color-mix(in srgb, var(--red) 55%, var(--sep));
+}
+
+.runpanel .rp-group[data-tone='bad'] .g-o {
+  color: var(--red);
+}
+
+.runpanel .rp-group[data-tone='run'] .g-o {
+  color: var(--accent);
+}
+
+.runpanel .rp-block {
+  margin: 0 0 4px 10px;
+  padding-left: 10px;
+  border-left: 1px solid var(--sep);
+}
+
+.runpanel .rp-block .ev:last-child {
+  border-bottom: 0;
+}
+
+/* What a call carried, under its Started line: the body as the log kept it. */
+.runpanel .ev .carried {
+  display: block;
+  margin-top: 4px;
+  padding: 4px 6px;
+  max-height: 9em;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+@media (pointer: coarse) and (hover: none) {
+  .runpanel .btn.sm,
+  .runpanel .rp-group,
+  .runpanel .rp-group.small {
+    height: auto;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .app[data-view='routine'] .side {
+    display: none;
+  }
+
+  .rv-head .back {
+    display: inline-flex;
+  }
+
+  .rv-head {
+    padding-left: 10px;
+  }
+
+  /* The actions under the title, a row of their own, so the name keeps the width. */
+  .rv-actions {
+    width: 100%;
+  }
+}

@@ -1,0 +1,40 @@
+# Outpost as a systemd *user* unit — it has to run as the person whose sessions it shows.
+#
+# It reads ~/.claude, starts sessions as that user's transient units, and launches `claude` with that user's
+# login, so a system unit under a service account would see no chats at all. The cost of a
+# user unit is that it normally dies with the login session; `loginctl enable-linger <user>`
+# lifts that and is the one root-level step in deploy/install.sh.
+#
+# Installed by deploy/install.sh to ~/.config/systemd/user/outpost.service, which substitutes the
+# checkout it was run from for __OUTPOST_DIR__. So the unit serves whichever checkout last ran
+# install.sh — Jenkins's deploy clone normally, your working clone if you run it by hand.
+# Edit here, not there.
+[Unit]
+Description=Outpost — the chats and workspaces of your Claude Code sessions
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__OUTPOST_DIR__
+# The built page and the API, without vite. `yarn build` has to have run first — the deploy
+# pipeline does; by hand it is `node .yarn/releases/yarn-4.18.0.cjs build` (README.md).
+ExecStart=/usr/bin/env node server/serve.mjs
+Restart=on-failure
+RestartSec=3
+
+# --- Environment ---------------------------------------------------------------------------
+# Serve the LAN. Only legal because a password is set (~/.outpost-auth.json); the server refuses
+# to start wide open otherwise, deliberately — see server/auth.mjs.
+Environment=OUTPOST_HOST=0.0.0.0
+# Absolute on purpose. A unit has no login-shell PATH, so the user-level folder `claude` is
+# installed to is invisible here; without this no chat starts. README.md has the symlink.
+Environment=OUTPOST_CLAUDE_BIN=/usr/local/bin/claude
+# Hooks post to 127.0.0.1:5274 and this must stay in step with them.
+Environment=PORT=5274
+# Outpost's state (archive list, hook state, settings) lives outside any checkout, so switching
+# the unit between checkouts does not reset it. install.sh seeds it from ./data the first time.
+Environment=OUTPOST_DATA=%h/.outpost/data
+
+[Install]
+WantedBy=default.target

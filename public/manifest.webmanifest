@@ -1,0 +1,10 @@
+{
+  "name": "Outpost",
+  "short_name": "Outpost",
+  "description": "Your Claude Code sessions, as chats.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1c1e",
+  "theme_color": "#1c1c1e",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

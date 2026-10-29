@@ -1,0 +1,20 @@
+# Line endings.
+#
+# Edited on Windows, run on Linux: without this the two disagree about every file —
+# `core.autocrlf` alone leaves CRLF in one working tree and LF in the other, invisible until
+# something diffs, or until a shell script picks up a `\r` and fails with an error that names
+# the wrong thing entirely.
+#
+# `eol=lf` rather than plain `text=auto`: the repository stores LF either way, but this also
+# checks out LF on Windows, so both machines see identical bytes.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
